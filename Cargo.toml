@@ -1,0 +1,10 @@
+[package]
+name = "halftone-grid"
+version = "0.1.0"
+edition = "2021"
+license-file = "LICENSE.md"
+
+[dependencies]
+
+[dev-dependencies]
+opencv = { version = "0.82.1", default-features = false, features = ["imgproc", "imgcodecs", "highgui"] }
