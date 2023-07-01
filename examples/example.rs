@@ -16,6 +16,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     ];
 
     for (name, angle) in grids {
+        let window_name = format!("{name} at {angle}°");
+
         let grid = GridIterator::new(
             WIDTH as _,
             HEIGHT as _,
@@ -29,14 +31,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut image =
             Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC1, Scalar::default())?;
         for (i, (x, y)) in grid.into_iter().enumerate() {
-            println!("{i}: {x}, {y}");
             let center = Point::new(x as _, y as _);
             let radius = 1;
             let color = Scalar::from(255.0);
             circle(&mut image, center, radius, color, FILLED, LINE_AA, 0)?;
-        }
 
-        imshow(&format!("{name} at {angle}°"), &image)?;
+            imshow(&window_name, &image)?;
+            if wait_key(1)? > 0 {
+                return Ok(());
+            }
+        }
     }
 
     wait_key(0)?;

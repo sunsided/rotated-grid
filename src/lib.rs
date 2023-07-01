@@ -19,6 +19,9 @@ pub struct GridIterator {
     cos_alpha: f64,
     current_x: f64,
     current_y: f64,
+    hits: u64,
+    misses: u64,
+    max_repeats: u64,
 }
 
 impl GridIterator {
@@ -62,6 +65,9 @@ impl GridIterator {
             cos_alpha,
             current_x: 0.0,
             current_y: 0.0,
+            hits: 0,
+            misses: 0,
+            max_repeats: 0,
         };
         iterator
     }
@@ -73,6 +79,7 @@ impl Iterator for GridIterator {
     fn next(&mut self) -> Option<Self::Item> {
         let (sin, cos) = (self.sin_alpha, self.cos_alpha);
 
+        let mut repeats = 0;
         loop {
             let x = self.start_x + self.current_x;
             let y = self.start_y + self.current_y;
@@ -98,12 +105,20 @@ impl Iterator for GridIterator {
                 && unrotated_y >= self.y0
                 && unrotated_y <= self.y0 + self.height
             {
+                self.hits += 1;
                 return Some((unrotated_x, unrotated_y));
             }
 
             if x > self.start_x + self.rotated_width || y > self.start_y + self.rotated_height {
+                eprintln!("Hits: {hits}", hits = self.hits);
+                eprintln!("Misses: {misses}", misses = self.misses);
+                eprintln!("Max repeats: {max_repeats}", max_repeats = self.max_repeats);
                 return None;
             }
+
+            self.misses += 1;
+            repeats += 1;
+            self.max_repeats = repeats.max(self.max_repeats);
         }
     }
 }
