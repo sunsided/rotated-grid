@@ -1,11 +1,14 @@
 [package]
 name = "rotated-grid"
 description = "Rotated grid calculations for halftones and more"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 keywords = ["halftone", "image-processing", "grid"]
-repository = "https://github.com/sunsided/halftone-grid"
+categories = ["multimedia::images"]
+repository = "https://github.com/sunsided/rotated-grid"
 license-file = "LICENSE.md"
+readme = "README.md"
+rust-version = "1.56"
 
 [dependencies]
 
