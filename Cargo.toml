@@ -1,10 +1,10 @@
 [package]
 name = "rotated-grid"
-description = "Rotated grid calculations for halftones and more"
+description = "Rotated grid calculations for CMYK halftone dithering and more"
 version = "0.0.1"
 edition = "2021"
 keywords = ["halftone", "image-processing", "grid"]
-categories = ["multimedia::images"]
+categories = ["multimedia::images", "mathematics"]
 repository = "https://github.com/sunsided/rotated-grid"
 license-file = "LICENSE.md"
 readme = "README.md"

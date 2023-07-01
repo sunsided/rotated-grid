@@ -1,7 +1,7 @@
-use halftone_grid::{Angle, GridIterator};
 use opencv::core::{Mat, Point, Scalar, CV_8UC1};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
+use rotated_grid::{Angle, GridIterator};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
