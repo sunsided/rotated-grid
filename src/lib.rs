@@ -2,59 +2,93 @@ mod angle;
 
 pub use angle::Angle;
 
-pub fn create_grid(
-    width: usize,
-    height: usize,
+pub struct GridIterator {
+    width: f64,
+    height: f64,
     dx: f64,
     dy: f64,
     x0: f64,
     y0: f64,
-    alpha: Angle<f64>,
-) -> Vec<(f64, f64)> {
-    let width = width as f64;
-    let height = height as f64;
-    let mut grid_positions: Vec<(f64, f64)> = Vec::new();
+    alpha_rad: f64,
+    current_x: f64,
+    current_y: f64,
+}
 
-    // Calculate the dimensions of the rotated grid.
-    let alpha_rad = alpha.into_radians();
-    let (sin, cos) = alpha_rad.sin_cos();
-    let rotated_width = (width * cos) + (height * sin);
-    let rotated_height = (width * sin) + (height * cos);
+impl GridIterator {
+    pub fn new(
+        width: f64,
+        height: f64,
+        dx: f64,
+        dy: f64,
+        x0: f64,
+        y0: f64,
+        alpha: Angle<f64>,
+    ) -> Self {
+        GridIterator {
+            width,
+            height,
+            dx,
+            dy,
+            x0,
+            y0,
+            alpha_rad: alpha.into_radians(),
+            current_x: 0.0,
+            current_y: 0.0,
+        }
+    }
+}
 
-    // Calculate the center of the rotated grid.
-    let center_x = x0 + (width * 0.5);
-    let center_y = y0 + (height * 0.5);
+impl Iterator for GridIterator {
+    type Item = (f64, f64);
 
-    // Calculate the starting point of the rotated grid.
-    let start_x = center_x - (rotated_width * 0.5);
-    let start_y = center_y - (rotated_height * 0.5);
+    fn next(&mut self) -> Option<Self::Item> {
+        let (sin, cos) = self.alpha_rad.sin_cos();
 
-    // Pre-calculate the angles for back-projection.
-    let (inv_sin, inv_cos) = (-alpha_rad).sin_cos();
+        // Calculate the dimensions of the rotated grid
+        let rotated_width = (self.width.abs() * cos) + (self.height.abs() * sin);
+        let rotated_height = (self.width.abs() * sin) + (self.height.abs() * cos);
 
-    // Iterate over the rotated grid positions
-    let mut y = start_y;
-    while y <= start_y + rotated_height {
-        let mut x = start_x;
-        while x <= start_x + rotated_width {
-            // Rotate the grid position back to the original frame.
+        // Calculate the center of the rotated grid.
+        let center_x = self.x0 + (self.width * 0.5);
+        let center_y = self.y0 + (self.height * 0.5);
+
+        // Calculate the starting point of the rotated grid.
+        let start_x = center_x - (rotated_width * 0.5);
+        let start_y = center_y - (rotated_height * 0.5);
+
+        loop {
+            let x = start_x + self.current_x;
+            let y = start_y + self.current_y;
+
+            // let (inv_sin, inv_cos) = (-self.alpha_rad).sin_cos();
+            let inv_sin = -sin;
+            let inv_cos = cos;
+
+            // Rotate the grid position back to the unrotated frame.
             let unrotated_x = (x - center_x) * inv_cos - (y - center_y) * inv_sin + center_x;
             let unrotated_y = (x - center_x) * inv_sin + (y - center_y) * inv_cos + center_y;
 
-            // Accept the coordinate if the grid position is within the original rectangle.
-            if unrotated_x >= x0
-                && unrotated_x <= x0 + width
-                && unrotated_y >= y0
-                && unrotated_y <= y0 + height
-            {
-                grid_positions.push((unrotated_x, unrotated_y));
+            // Update the current position.
+            self.current_x += self.dx;
+            if self.current_x > rotated_width {
+                self.current_x = 0.0;
+                self.current_y += self.dy;
             }
 
-            x += dx;
+            // Check if the grid position is within the original rectangle.
+            if unrotated_x >= self.x0
+                && unrotated_x <= self.x0 + self.width
+                && unrotated_y >= self.y0
+                && unrotated_y <= self.y0 + self.height
+            {
+                return Some((unrotated_x, unrotated_y));
+            }
+
+            if x > start_x + rotated_width || y > start_y + rotated_height {
+                return None;
+            }
         }
 
-        y += dy;
+        unreachable!()
     }
-
-    grid_positions
 }

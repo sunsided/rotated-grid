@@ -1,4 +1,4 @@
-use halftone_grid::{create_grid, Angle};
+use halftone_grid::{Angle, GridIterator};
 use opencv::core::{Mat, Point, Scalar, CV_8UC1};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
@@ -16,9 +16,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     ];
 
     for (name, angle) in grids {
-        let grid = create_grid(
-            WIDTH,
-            HEIGHT,
+        let grid = GridIterator::new(
+            WIDTH as _,
+            HEIGHT as _,
             7.0,
             7.0,
             0.0,
