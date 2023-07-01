@@ -1,7 +1,10 @@
 [package]
-name = "halftone-grid"
+name = "rotated-grid"
+description = "Rotated grid calculations for halftones and more"
 version = "0.1.0"
 edition = "2021"
+keywords = ["halftone", "image-processing", "grid"]
+repository = "https://github.com/sunsided/halftone-grid"
 license-file = "LICENSE.md"
 
 [dependencies]

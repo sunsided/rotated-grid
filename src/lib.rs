@@ -9,7 +9,8 @@ pub struct GridIterator {
     dy: f64,
     x0: f64,
     y0: f64,
-    alpha_rad: f64,
+    sin_alpha: f64,
+    cos_alpha: f64,
     current_x: f64,
     current_y: f64,
 }
@@ -24,6 +25,7 @@ impl GridIterator {
         y0: f64,
         alpha: Angle<f64>,
     ) -> Self {
+        let (sin_alpha, cos_alpha) = alpha.into_radians().sin_cos();
         GridIterator {
             width,
             height,
@@ -31,7 +33,8 @@ impl GridIterator {
             dy,
             x0,
             y0,
-            alpha_rad: alpha.into_radians(),
+            sin_alpha,
+            cos_alpha,
             current_x: 0.0,
             current_y: 0.0,
         }
@@ -42,7 +45,7 @@ impl Iterator for GridIterator {
     type Item = (f64, f64);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (sin, cos) = self.alpha_rad.sin_cos();
+        let (sin, cos) = (self.sin_alpha, self.cos_alpha);
 
         // Calculate the dimensions of the rotated grid
         let rotated_width = (self.width.abs() * cos) + (self.height.abs() * sin);
@@ -60,11 +63,9 @@ impl Iterator for GridIterator {
             let x = start_x + self.current_x;
             let y = start_y + self.current_y;
 
-            // let (inv_sin, inv_cos) = (-self.alpha_rad).sin_cos();
+            // Rotate the grid position back to the unrotated frame.
             let inv_sin = -sin;
             let inv_cos = cos;
-
-            // Rotate the grid position back to the unrotated frame.
             let unrotated_x = (x - center_x) * inv_cos - (y - center_y) * inv_sin + center_x;
             let unrotated_y = (x - center_x) * inv_sin + (y - center_y) * inv_cos + center_y;
 
@@ -88,7 +89,5 @@ impl Iterator for GridIterator {
                 return None;
             }
         }
-
-        unreachable!()
     }
 }
