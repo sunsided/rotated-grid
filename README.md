@@ -1,8 +1,15 @@
 # Rotated grids in Rust
 
-_For halftone dithering and more._
+🎨 _For halftone dithering and more._
 
-This crate generates grid coordinates at a specified offset along a rotated grid.
+---
+
+This crate provides a generator for enumerating grid coordinates at a specified frequency along a rotated grid.
+This can come in useful e.g. when you want to create halftone dithering grids for CMYK processing:
+
+<div align="center" style="text-align: center">
+    <img src="readme/grid.png" alt="CMYK grid examples" />
+</div>
 
 ## Usage example
 
