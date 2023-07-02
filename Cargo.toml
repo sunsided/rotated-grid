@@ -1,16 +1,20 @@
 [package]
 name = "rotated-grid"
 description = "Rotated grid calculations for CMYK halftone dithering and more"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2021"
 keywords = ["halftone", "image-processing", "grid"]
 categories = ["multimedia::images", "mathematics"]
 repository = "https://github.com/sunsided/rotated-grid"
 license-file = "LICENSE.md"
 readme = "README.md"
-rust-version = "1.56"
+rust-version = "1.59"
 
 [dependencies]
 
 [dev-dependencies]
 opencv = { version = "0.82.1", default-features = false, features = ["imgproc", "imgcodecs", "highgui"] }
+
+[[example]]
+name = "cmyk"
+path = "examples/cmyk.rs"
