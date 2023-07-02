@@ -4,6 +4,8 @@ _For halftone dithering and more._
 
 This crate generates grid coordinates at a specified offset along a rotated grid.
 
+## Usage example
+
 ```rust
 use rotated_grid::{Angle, GridPositionIterator, GridCoordinate};
 
@@ -42,4 +44,10 @@ fn main() {
         assert!(count <= expected_max.unwrap())
     }
 }
+```
+
+You can run the example application using
+
+```shell
+cargo run --package cmyk
 ```
