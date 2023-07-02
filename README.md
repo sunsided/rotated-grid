@@ -11,6 +11,9 @@ This can come in useful e.g. when you want to create halftone dithering grids fo
     <img src="readme/grid.png" alt="CMYK grid examples" />
 </div>
 
+See e.g. my [opencv-cartoon-effect](https://github.com/sunsided/opencv-cartoon-effect) repo for an almost-real-world 
+usage example.
+
 ## Usage example
 
 ```rust
