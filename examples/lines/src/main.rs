@@ -1,4 +1,4 @@
-use opencv::core::{Mat, Point, Scalar, CV_8UC1, CV_8UC3};
+use opencv::core::{norm, Mat, Point, Scalar, CV_8UC1, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, line, FILLED, LINE_AA};
 use opencv::prelude::*;
@@ -40,11 +40,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         let up_l = Line::from_points(center, &up);
 
         let intersect = intersect_with_rectangle(&up_l, &top, &left, &bottom, &right);
+        let length_inside_sq = (intersect - center).norm_sq();
 
         let orthogonal = Line::new(intersect, up_l.direction().orthogonal());
         let other_intersect =
             find_other_intersection(orthogonal.clone(), &top, &left, &bottom, &right)
                 .or_else(|| find_other_intersection(-orthogonal, &top, &left, &bottom, &right));
+
+        render_outside_part(&mut image, &tl, &up_l, &intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &tr, &up_l, &intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &bl, &up_l, &intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &br, &up_l, &intersect, length_inside_sq)?;
 
         circle(
             &mut image,
@@ -116,6 +122,55 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Ok(());
         }
     }
+}
+
+fn render_outside_part(
+    mut image: &mut Mat,
+    corner: &Vector,
+    up_l: &Line,
+    intersect: &Vector,
+    length_inside_sq: f64,
+) -> Result<(), Box<dyn Error>> {
+    let dist_to_corner = up_l.dot(&corner);
+    let dist_to_corner_sq = dist_to_corner * dist_to_corner;
+    if dist_to_corner > 0.0 && dist_to_corner_sq > length_inside_sq {
+        let topmost = up_l.clone() * dist_to_corner;
+
+        let color = Scalar::from((0.0, 0.0, 255.0, 0.0));
+
+        line(
+            &mut image,
+            vec2point(&intersect),
+            vec2point(&topmost),
+            Scalar::default(),
+            1,
+            LINE_AA,
+            0,
+        )?;
+
+        circle(
+            &mut image,
+            vec2point(&topmost),
+            4,
+            color,
+            FILLED,
+            LINE_AA,
+            0,
+        )?;
+
+        circle(&mut image, vec2point(&corner), 4, color, FILLED, LINE_AA, 0)?;
+
+        line(
+            &mut image,
+            vec2point(&corner),
+            vec2point(&topmost),
+            color,
+            1,
+            LINE_AA,
+            0,
+        )?;
+    }
+    Ok(())
 }
 
 /// Finds the intersection point that is furthest from the specified line's origin,

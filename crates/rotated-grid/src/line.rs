@@ -1,6 +1,6 @@
 use crate::vector::Vector;
 use crate::LineSegment;
-use std::ops::Neg;
+use std::ops::{Mul, Neg};
 
 /// A line determined by a ray starting at a point of origin.
 #[derive(Debug, Clone)]
@@ -133,6 +133,14 @@ impl Neg for Line {
             origin: self.origin,
             direction: -self.direction,
         }
+    }
+}
+
+impl Mul<f64> for Line {
+    type Output = Vector;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        self.origin + rhs * self.direction
     }
 }
 
