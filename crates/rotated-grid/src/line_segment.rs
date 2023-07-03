@@ -4,9 +4,9 @@ use crate::Line;
 /// A line segment determined by a ray starting at a point of origin with a specified length and direction.
 pub struct LineSegment {
     /// The origin point of the line segment.
-    pub origin: Vector,
+    origin: Vector,
     /// The length and direction vector of the line segment.
-    pub length: Vector,
+    length: Vector,
 }
 
 impl LineSegment {
@@ -23,5 +23,13 @@ impl LineSegment {
     /// Gets a normalized length version of the line.
     pub fn normalized(&self) -> Line {
         Line::new(self.origin, self.length)
+    }
+
+    pub const fn origin(&self) -> &Vector {
+        &self.origin
+    }
+
+    pub const fn length(&self) -> &Vector {
+        &self.length
     }
 }

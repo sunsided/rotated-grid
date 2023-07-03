@@ -27,6 +27,14 @@ impl Line {
         self.direction.dot(&(*point - self.origin))
     }
 
+    pub const fn origin(&self) -> &Vector {
+        &self.origin
+    }
+
+    pub const fn direction(&self) -> &Vector {
+        &self.direction
+    }
+
     /// Determines the intersection of this line with another one.
     ///
     /// ## Arguments
@@ -68,9 +76,9 @@ impl Line {
     /// * `None` if the lines are parallel or coincide.
     pub fn intersect_with_segment(&self, line_segment: &LineSegment) -> Option<Vector> {
         let p = self.origin;
-        let q = line_segment.origin;
+        let q = *line_segment.origin();
         let r = self.direction;
-        let s = line_segment.length;
+        let s = *line_segment.length();
 
         let q_minus_p = q - p;
         let r_cross_s = r.cross(&s);
@@ -83,9 +91,10 @@ impl Line {
         let t = q_minus_p.cross(&s) / r_cross_s;
         let u = q_minus_p.cross(&r) / r_cross_s;
 
-        let length_sq = line_segment.length.norm_sq();
+        let length_sq = line_segment.length().norm_sq();
+        let t_sq = t * t;
 
-        if t >= 0.0 && t * t <= length_sq && u >= 0.0 && u <= 1.0 {
+        if t >= 0.0 && t_sq <= length_sq && u >= 0.0 && u <= 1.0 {
             // Calculate the intersection point
             let intersection_x = p.x + t * r.x;
             let intersection_y = p.y + t * r.y;

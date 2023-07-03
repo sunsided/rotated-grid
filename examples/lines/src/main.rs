@@ -1,4 +1,4 @@
-use opencv::core::{Mat, Point, Scalar, CV_8UC1};
+use opencv::core::{Mat, Point, Scalar, CV_8UC1, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, line, FILLED, LINE_AA};
 use opencv::prelude::*;
@@ -9,8 +9,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
 
-    let mut image =
-        Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC1, Scalar::from(255.0))?;
+    let bg_color = Scalar::from((255.0, 255.0, 255.0, 0.0));
+
+    let mut image = Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, bg_color)?;
 
     let tl = Vector::new(100.0, 100.0);
     let tr = Vector::new(540.0, 100.0);
@@ -33,21 +34,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         let angle = Angle::from_degrees(angle as _);
-        image.set(Scalar::from(255.0))?;
+        image.set(bg_color)?;
 
         let up = up.rotate_around(&center, angle);
-
         let up_l = Line::from_points(center, &up);
-        let intersect_top = up_l.intersect_with_segment(&top);
-        let intersect_bottom = up_l.intersect_with_segment(&bottom);
-        let intersect_left = up_l.intersect_with_segment(&left);
-        let intersect_right = up_l.intersect_with_segment(&right);
 
-        let intersect = intersect_top
-            .or(intersect_left)
-            .or(intersect_bottom)
-            .or(intersect_right)
-            .unwrap();
+        let intersect = intersect_with_rectangle(&up_l, &top, &left, &bottom, &right);
+
+        let orthogonal = Line::new(intersect, up_l.direction().orthogonal());
 
         circle(
             &mut image,
@@ -79,6 +73,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             0,
         )?;
 
+        line(
+            &mut image,
+            vec2point(&(intersect - *orthogonal.direction() * 100.0)),
+            vec2point(&(intersect + *orthogonal.direction() * 100.0)),
+            Scalar::from((255.0, 0.0, 0.0, 0.0)),
+            1,
+            LINE_AA,
+            0,
+        )?;
+
         // center
         circle(
             &mut image,
@@ -97,10 +101,26 @@ fn main() -> Result<(), Box<dyn Error>> {
             return Ok(());
         }
     }
+}
 
-    imshow("Lines", &image)?;
-    wait_key(0)?;
-    Ok(())
+fn intersect_with_rectangle(
+    up_direction: &Line,
+    top: &LineSegment,
+    left: &LineSegment,
+    bottom: &LineSegment,
+    right: &LineSegment,
+) -> Vector {
+    let intersect_top = up_direction.intersect_with_segment(&top);
+    let intersect_bottom = up_direction.intersect_with_segment(&bottom);
+    let intersect_left = up_direction.intersect_with_segment(&left);
+    let intersect_right = up_direction.intersect_with_segment(&right);
+
+    let intersect = intersect_top
+        .or(intersect_left)
+        .or(intersect_bottom)
+        .or(intersect_right)
+        .unwrap();
+    intersect
 }
 
 fn draw_rectangle(
