@@ -1,7 +1,9 @@
 use crate::vector::Vector;
 use crate::LineSegment;
+use std::ops::Neg;
 
 /// A line determined by a ray starting at a point of origin.
+#[derive(Debug, Clone)]
 pub struct Line {
     /// The origin point of the line.
     origin: Vector,
@@ -120,6 +122,17 @@ impl Line {
 
         let cross_product = v1.x * v2.y - v1.y * v2.x;
         cross_product
+    }
+}
+
+impl Neg for Line {
+    type Output = Line;
+
+    fn neg(self) -> Self::Output {
+        Self {
+            origin: self.origin,
+            direction: -self.direction,
+        }
     }
 }
 

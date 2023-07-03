@@ -42,6 +42,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let intersect = intersect_with_rectangle(&up_l, &top, &left, &bottom, &right);
 
         let orthogonal = Line::new(intersect, up_l.direction().orthogonal());
+        let other_intersect =
+            find_other_intersection(orthogonal.clone(), &top, &left, &bottom, &right)
+                .or_else(|| find_other_intersection(-orthogonal, &top, &left, &bottom, &right));
 
         circle(
             &mut image,
@@ -52,6 +55,28 @@ fn main() -> Result<(), Box<dyn Error>> {
             LINE_AA,
             0,
         )?;
+
+        if let Some(other_intersect) = other_intersect {
+            circle(
+                &mut image,
+                vec2point(&other_intersect),
+                4,
+                Scalar::from((255.0, 0.0, 0.0, 0.0)),
+                FILLED,
+                LINE_AA,
+                0,
+            )?;
+
+            line(
+                &mut image,
+                vec2point(&intersect),
+                vec2point(&other_intersect),
+                Scalar::from((255.0, 0.0, 0.0, 0.0)),
+                1,
+                LINE_AA,
+                0,
+            )?;
+        }
 
         line(
             &mut image,
@@ -68,16 +93,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             vec2point(&center),
             vec2point(&intersect),
             Scalar::default(),
-            1,
-            LINE_AA,
-            0,
-        )?;
-
-        line(
-            &mut image,
-            vec2point(&(intersect - *orthogonal.direction() * 100.0)),
-            vec2point(&(intersect + *orthogonal.direction() * 100.0)),
-            Scalar::from((255.0, 0.0, 0.0, 0.0)),
             1,
             LINE_AA,
             0,
@@ -103,6 +118,67 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 }
 
+/// Finds the intersection point that is furthest from the specified line's origin,
+/// assuming the line's origin already is an intersection point.
+fn find_other_intersection(
+    orthogonal: Line,
+    top: &LineSegment,
+    left: &LineSegment,
+    bottom: &LineSegment,
+    right: &LineSegment,
+) -> Option<Vector> {
+    let intersect_top = orthogonal.intersect_with_segment(&top);
+    let intersect_bottom = orthogonal.intersect_with_segment(&bottom);
+    let intersect_left = orthogonal.intersect_with_segment(&left);
+    let intersect_right = orthogonal.intersect_with_segment(&right);
+
+    let mut other_intersect = match intersect_top
+        .or(intersect_bottom)
+        .or(intersect_left)
+        .or(intersect_right)
+    {
+        None => return None,
+        Some(point) => point,
+    };
+
+    let current_len_sq = (other_intersect - *orthogonal.origin()).norm_sq();
+
+    if let Some(other) = intersect_top {
+        let len_sq = (other - other_intersect).norm_sq();
+        if len_sq > current_len_sq {
+            return Some(other);
+        }
+    }
+
+    if let Some(other) = intersect_left {
+        let len_sq = (other - other_intersect).norm_sq();
+        if len_sq > current_len_sq {
+            return Some(other);
+        }
+    }
+
+    if let Some(other) = intersect_bottom {
+        let len_sq = (other - other_intersect).norm_sq();
+        if len_sq > current_len_sq {
+            return Some(other);
+        }
+    }
+
+    if let Some(other) = intersect_right {
+        let len_sq = (other - other_intersect).norm_sq();
+        if len_sq > current_len_sq {
+            return Some(other);
+        }
+    }
+
+    // The points coincide, or there was exactly one result.
+    if current_len_sq > 1e-4 {
+        Some(other_intersect)
+    } else {
+        None
+    }
+}
+
 fn intersect_with_rectangle(
     up_direction: &Line,
     top: &LineSegment,
@@ -114,13 +190,11 @@ fn intersect_with_rectangle(
     let intersect_bottom = up_direction.intersect_with_segment(&bottom);
     let intersect_left = up_direction.intersect_with_segment(&left);
     let intersect_right = up_direction.intersect_with_segment(&right);
-
-    let intersect = intersect_top
+    intersect_top
         .or(intersect_left)
         .or(intersect_bottom)
         .or(intersect_right)
-        .unwrap();
-    intersect
+        .expect("line intersects with at least one edge")
 }
 
 fn draw_rectangle(
