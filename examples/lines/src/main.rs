@@ -39,22 +39,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         let up = up.rotate_around(&center, angle);
         let up_l = Line::from_points(center, &up);
 
-        let intersect = intersect_with_rectangle(&up_l, &top, &left, &bottom, &right);
-        let length_inside_sq = (intersect - center).norm_sq();
+        let top_intersect = intersect_with_rectangle(&up_l, &top, &left, &bottom, &right);
+        let length_inside_sq = (top_intersect - center).norm_sq();
 
-        let orthogonal = Line::new(intersect, up_l.direction().orthogonal());
-        let other_intersect =
+        let orthogonal = Line::new(top_intersect, up_l.direction().orthogonal());
+        let other_top_intersect =
             find_other_intersection(orthogonal.clone(), &top, &left, &bottom, &right)
                 .or_else(|| find_other_intersection(-orthogonal, &top, &left, &bottom, &right));
 
-        render_outside_part(&mut image, &tl, &up_l, &intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &tr, &up_l, &intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &bl, &up_l, &intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &br, &up_l, &intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &tl, &up_l, &top_intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &tr, &up_l, &top_intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &bl, &up_l, &top_intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &br, &up_l, &top_intersect, length_inside_sq)?;
+
+        let orthogonal = Line::new(center, up_l.direction().orthogonal());
+        let base_intersect =
+            find_other_intersection(orthogonal.clone(), &top, &left, &bottom, &right)
+                .expect("expect a line to one side");
+        let other_base_intersect =
+            find_other_intersection(-orthogonal.clone(), &top, &left, &bottom, &right)
+                .expect("expect a line to one side");
 
         circle(
             &mut image,
-            vec2point(&intersect),
+            vec2point(&top_intersect),
             4,
             Scalar::default(),
             FILLED,
@@ -62,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             0,
         )?;
 
-        if let Some(other_intersect) = other_intersect {
+        if let Some(other_intersect) = other_top_intersect {
             circle(
                 &mut image,
                 vec2point(&other_intersect),
@@ -75,7 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             line(
                 &mut image,
-                vec2point(&intersect),
+                vec2point(&top_intersect),
                 vec2point(&other_intersect),
                 Scalar::from((255.0, 0.0, 0.0, 0.0)),
                 1,
@@ -83,6 +91,44 @@ fn main() -> Result<(), Box<dyn Error>> {
                 0,
             )?;
         }
+
+        circle(
+            &mut image,
+            vec2point(&base_intersect),
+            4,
+            Scalar::from((0.0, 255.0, 0.0, 0.0)),
+            FILLED,
+            LINE_AA,
+            0,
+        )?;
+        line(
+            &mut image,
+            vec2point(&center),
+            vec2point(&base_intersect),
+            Scalar::from((0.0, 255.0, 0.0, 0.0)),
+            1,
+            LINE_AA,
+            0,
+        )?;
+
+        circle(
+            &mut image,
+            vec2point(&other_base_intersect),
+            4,
+            Scalar::from((0.0, 255.0, 0.0, 0.0)),
+            FILLED,
+            LINE_AA,
+            0,
+        )?;
+        line(
+            &mut image,
+            vec2point(&center),
+            vec2point(&other_base_intersect),
+            Scalar::from((0.0, 255.0, 0.0, 0.0)),
+            1,
+            LINE_AA,
+            0,
+        )?;
 
         line(
             &mut image,
@@ -97,7 +143,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         line(
             &mut image,
             vec2point(&center),
-            vec2point(&intersect),
+            vec2point(&top_intersect),
             Scalar::default(),
             1,
             LINE_AA,
