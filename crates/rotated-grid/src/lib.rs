@@ -13,7 +13,7 @@
 //! ## Example
 //!
 //! ```
-//! use rotated_grid::{Angle, GridPoint, GridPositionIterator};
+//! use rotated_grid::{Angle, GridCoord, GridPositionIterator};
 //!
 //! const WIDTH: usize = 16;
 //! const HEIGHT: usize = 10;
@@ -41,7 +41,7 @@
 //!     let (_, expected_max) = grid.size_hint();
 //!     let mut count = 0;
 //!
-//!     for GridPoint { x, y } in grid {
+//!     for GridCoord { x, y } in grid {
 //!         println!("{x}, {y}");
 //!         count += 1;
 //!     }
@@ -51,10 +51,16 @@
 //! ```
 
 mod angle;
-mod point;
+mod grid_coord;
+mod line;
+mod line_segment;
+mod vector;
 
 pub use angle::Angle;
-pub use point::GridPoint;
+pub use grid_coord::GridCoord;
+pub use line::Line;
+pub use line_segment::LineSegment;
+pub use vector::Vector;
 
 /// An iterator for positions on a rotated grid.
 pub struct GridPositionIterator {
@@ -176,7 +182,7 @@ impl GridPositionIterator {
 }
 
 impl Iterator for GridPositionIterator {
-    type Item = GridPoint;
+    type Item = GridCoord;
 
     fn next(&mut self) -> Option<Self::Item> {
         let (sin, cos) = (self.sin_alpha, self.cos_alpha);
@@ -211,7 +217,7 @@ impl Iterator for GridPositionIterator {
                 {
                     self.hits += 1;
                 }
-                return Some(GridPoint::new(unrotated_x, unrotated_y));
+                return Some(GridCoord::new(unrotated_x, unrotated_y));
             }
 
             if x > self.start_x + self.rotated_width || y > self.start_y + self.rotated_height {

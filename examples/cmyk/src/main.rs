@@ -1,7 +1,7 @@
 use opencv::core::{Mat, Point, Scalar, CV_8UC1};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
-use rotated_grid::{Angle, GridPoint, GridPositionIterator};
+use rotated_grid::{Angle, GridCoord, GridPositionIterator};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let mut image =
             Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC1, Scalar::default())?;
-        for GridPoint { x, y } in grid {
+        for GridCoord { x, y } in grid {
             count += 1;
 
             let center = Point::new(x as _, y as _);
