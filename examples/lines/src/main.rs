@@ -1,4 +1,4 @@
-use opencv::core::{norm, Mat, Point, Scalar, CV_8UC1, CV_8UC3};
+use opencv::core::{norm, Mat, Point, Scalar, Scalar_, VecN, CV_8UC1, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, line, FILLED, LINE_AA};
 use opencv::prelude::*;
@@ -19,155 +19,154 @@ fn main() -> Result<(), Box<dyn Error>> {
     let br = Vector::new(540.0, 380.0);
     let center = (tl + tr + bl + br) / 4.0;
 
-    let up = Vector::new(0.0, 100.0) + center;
+    let world_top = Vector::new(0.0, 100.0) + center;
 
-    let top = LineSegment::from_points(tr, &tl);
-    let left = LineSegment::from_points(tl, &bl);
-    let bottom = LineSegment::from_points(bl, &br);
-    let right = LineSegment::from_points(br, &tr);
+    let rect_top = LineSegment::from_points(tr, &tl);
+    let rect_left = LineSegment::from_points(tl, &bl);
+    let rect_bottom = LineSegment::from_points(bl, &br);
+    let rect_right = LineSegment::from_points(br, &tr);
 
     let mut angle = 0.0;
+    let mut increment = 0.5;
     loop {
-        angle += 1.0;
-        if angle > 360.0 {
-            angle -= 360.0;
+        angle += increment;
+        if angle >= 90.0 {
+            increment *= -1.0;
+            angle = 90.0;
+        } else if angle < 0.0 {
+            increment *= -1.0;
+            angle = 0.0;
         }
 
-        let angle = Angle::from_degrees(angle as _);
+        let angle = Angle::from_degrees(-angle as _);
         image.set(bg_color)?;
 
-        let up = up.rotate_around(&center, angle);
-        let up_l = Line::from_points(center, &up);
+        draw_rectangle(&mut image, &tl, &tr, &bl, &br)?;
 
-        let top_intersect = intersect_with_rectangle(&up_l, &top, &left, &bottom, &right);
+        // Form a ray from the center along the "up" direction.
+        let top = world_top.rotate_around(&center, angle);
+        let up_ray = Line::from_points(center, &top);
+
+        // Calculate the orthogonal direction
+        let left_dir = up_ray.direction().orthogonal();
+
+        // Calculate the point at which the upwards ray intersects with the rectangle,
+        // as well as the length of that ray.
+        let top_intersect =
+            intersect_with_rectangle(&up_ray, &rect_top, &rect_left, &rect_bottom, &rect_right);
         let length_inside_sq = (top_intersect - center).norm_sq();
 
-        let orthogonal = Line::new(top_intersect, up_l.direction().orthogonal());
-        let other_top_intersect =
-            find_other_intersection(orthogonal.clone(), &top, &left, &bottom, &right)
-                .or_else(|| find_other_intersection(-orthogonal, &top, &left, &bottom, &right));
+        // Determine the line that
+        let orthogonal = Line::new(top_intersect, left_dir);
+        let opposite_top_intersect = find_other_intersection(
+            &orthogonal,
+            &rect_top,
+            &rect_left,
+            &rect_bottom,
+            &rect_right,
+        )
+        .or_else(|| {
+            find_other_intersection(
+                &-orthogonal,
+                &rect_top,
+                &rect_left,
+                &rect_bottom,
+                &rect_right,
+            )
+        });
 
-        render_outside_part(&mut image, &tl, &up_l, &top_intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &tr, &up_l, &top_intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &bl, &up_l, &top_intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &br, &up_l, &top_intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &tl, &up_ray, &top_intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &tr, &up_ray, &top_intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &bl, &up_ray, &top_intersect, length_inside_sq)?;
+        render_outside_part(&mut image, &br, &up_ray, &top_intersect, length_inside_sq)?;
 
-        let orthogonal = Line::new(center, up_l.direction().orthogonal());
-        let base_intersect =
-            find_other_intersection(orthogonal.clone(), &top, &left, &bottom, &right)
-                .expect("expect a line to one side");
-        let other_base_intersect =
-            find_other_intersection(-orthogonal.clone(), &top, &left, &bottom, &right)
-                .expect("expect a line to one side");
+        let orthogonal_base = Line::new(center, left_dir);
+        let base_intersect = find_other_intersection(
+            &orthogonal_base,
+            &rect_top,
+            &rect_left,
+            &rect_bottom,
+            &rect_right,
+        )
+        .expect("expect a line to one side");
+        let opposite_base_intersect = find_other_intersection(
+            &-orthogonal_base,
+            &rect_top,
+            &rect_left,
+            &rect_bottom,
+            &rect_right,
+        )
+        .expect("expect a line to one side");
 
-        circle(
-            &mut image,
-            vec2point(&top_intersect),
-            4,
-            Scalar::default(),
-            FILLED,
-            LINE_AA,
-            0,
-        )?;
+        draw_point(&mut image, &center, Scalar::from((0.0, 255.0, 0.0, 0.0)))?;
 
-        if let Some(other_intersect) = other_top_intersect {
-            circle(
+        draw_line_with_dot(&mut image, &center, &top_intersect, Scalar::default())?;
+        if let Some(other) = opposite_top_intersect {
+            draw_line_with_dot(
                 &mut image,
-                vec2point(&other_intersect),
-                4,
+                &top_intersect,
+                &other,
                 Scalar::from((255.0, 0.0, 0.0, 0.0)),
-                FILLED,
-                LINE_AA,
-                0,
-            )?;
-
-            line(
-                &mut image,
-                vec2point(&top_intersect),
-                vec2point(&other_intersect),
-                Scalar::from((255.0, 0.0, 0.0, 0.0)),
-                1,
-                LINE_AA,
-                0,
             )?;
         }
 
-        circle(
+        // Draw the line through the center.
+        draw_line_with_dot(
             &mut image,
-            vec2point(&base_intersect),
-            4,
+            &center,
+            &base_intersect,
             Scalar::from((0.0, 255.0, 0.0, 0.0)),
-            FILLED,
-            LINE_AA,
-            0,
         )?;
-        line(
+        draw_line_with_dot(
             &mut image,
-            vec2point(&center),
-            vec2point(&base_intersect),
+            &center,
+            &opposite_base_intersect,
             Scalar::from((0.0, 255.0, 0.0, 0.0)),
-            1,
-            LINE_AA,
-            0,
         )?;
-
-        circle(
-            &mut image,
-            vec2point(&other_base_intersect),
-            4,
-            Scalar::from((0.0, 255.0, 0.0, 0.0)),
-            FILLED,
-            LINE_AA,
-            0,
-        )?;
-        line(
-            &mut image,
-            vec2point(&center),
-            vec2point(&other_base_intersect),
-            Scalar::from((0.0, 255.0, 0.0, 0.0)),
-            1,
-            LINE_AA,
-            0,
-        )?;
-
-        line(
-            &mut image,
-            vec2point(&center),
-            vec2point(&up),
-            Scalar::default(),
-            4,
-            LINE_AA,
-            0,
-        )?;
-
-        line(
-            &mut image,
-            vec2point(&center),
-            vec2point(&top_intersect),
-            Scalar::default(),
-            1,
-            LINE_AA,
-            0,
-        )?;
-
-        // center
-        circle(
-            &mut image,
-            vec2point(&center),
-            1,
-            Scalar::default(),
-            FILLED,
-            LINE_AA,
-            0,
-        )?;
-
-        draw_rectangle(&mut image, &tl, &tr, &bl, &br)?;
 
         imshow("Lines", &image)?;
         if wait_key(33)? > 1 {
             return Ok(());
         }
     }
+}
+
+fn draw_line_with_dot(
+    mut image: &mut Mat,
+    from: &Vector,
+    to: &Vector,
+    color: Scalar_<f64>,
+) -> Result<(), Box<dyn Error>> {
+    draw_point(&mut image, to, color)?;
+    draw_line(&mut image, from, to, color)?;
+    Ok(())
+}
+
+fn draw_line(
+    mut image: &mut Mat,
+    start: &Vector,
+    end: &Vector,
+    color: Scalar_<f64>,
+) -> Result<(), Box<dyn Error>> {
+    line(
+        &mut image,
+        vec2point(&start),
+        vec2point(&end),
+        color,
+        1,
+        LINE_AA,
+        0,
+    )?;
+    Ok(())
+}
+
+fn draw_point(
+    mut image: &mut Mat,
+    point: &Vector,
+    color: VecN<f64, 4>,
+) -> Result<(), Box<dyn Error>> {
+    circle(&mut image, vec2point(point), 4, color, FILLED, LINE_AA, 0)?;
+    Ok(())
 }
 
 fn render_outside_part(
@@ -222,7 +221,7 @@ fn render_outside_part(
 /// Finds the intersection point that is furthest from the specified line's origin,
 /// assuming the line's origin already is an intersection point.
 fn find_other_intersection(
-    orthogonal: Line,
+    orthogonal: &Line,
     top: &LineSegment,
     left: &LineSegment,
     bottom: &LineSegment,
