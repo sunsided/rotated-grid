@@ -6,8 +6,21 @@ use rotated_grid::{Angle, Line, LineSegment, Vector};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let x0: f64 = 2.0;
+    let dx: f64 = 1.5;
+    let x1: f64 = -7.0;
+
+    if let Some(t) = find_t(x0, dx, x1) {
+        println!("t = {}, next highest = {}", t, x0 + dx * t as f64);
+    } else {
+        println!("No valid value of t exists.");
+    }
+
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
+
+    let dx = 10.0;
+    let dy = 20.0;
 
     let bg_color = Scalar::from((255.0, 255.0, 255.0, 0.0));
 
@@ -27,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rect_right = LineSegment::from_points(br, &tr);
 
     let mut angle = 0.0;
-    let mut increment = 0.5;
+    let mut increment = 0.1;
     loop {
         angle += increment;
         if angle >= 90.0 {
@@ -123,6 +136,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             &opposite_base_intersect,
             Scalar::from((0.0, 255.0, 0.0, 0.0)),
         )?;
+
+        // Walk alongside the top direction in dx steps and create orthogonal lines.
+        let mut t = 0.0;
+        // let length = center
+        /*
+        while t {
+
+        }
+         */
 
         imshow("Lines", &image)?;
         if wait_key(33)? > 1 {

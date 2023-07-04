@@ -45,37 +45,6 @@ impl Line {
     /// ## Returns
     /// * `Some(Vector)` of the intersection point.
     /// * `None` if the lines are parallel or coincide.
-    pub fn intersect_with_line(&self, other: &Self) -> Option<Vector> {
-        let dx = self.origin.x - other.origin.x;
-        let dy = self.origin.y - other.origin.y;
-
-        let determinant =
-            other.direction.x * self.direction.y - other.direction.y * self.direction.x;
-        if determinant == 0.0 {
-            // The lines are parallel
-            return None;
-        }
-
-        let t = (other.direction.x * dy - other.direction.y * dx) / determinant;
-
-        let intersection_x = self.origin.x + t * self.direction.x;
-        let intersection_y = self.origin.y + t * self.direction.y;
-        Some(
-            (Vector {
-                x: intersection_x,
-                y: intersection_y,
-            }),
-        )
-    }
-
-    /// Determines the intersection of this line with another one.
-    ///
-    /// ## Arguments
-    /// * `other` - The other line to test.
-    ///
-    /// ## Returns
-    /// * `Some(Vector)` of the intersection point.
-    /// * `None` if the lines are parallel or coincide.
     pub fn intersect_with_segment(&self, line_segment: &LineSegment) -> Option<Vector> {
         let p = self.origin;
         let q = *line_segment.origin();
@@ -141,88 +110,5 @@ impl Mul<f64> for Line {
 
     fn mul(self, rhs: f64) -> Self::Output {
         self.origin + rhs * self.direction
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_intersect_with_1() {
-        let line1 = Line {
-            origin: Vector { x: 2.0, y: 3.0 },
-            direction: Vector { x: 2.0, y: 2.0 },
-        };
-        let line2 = Line {
-            origin: Vector { x: 1.0, y: 5.0 },
-            direction: Vector { x: 2.0, y: -1.0 },
-        };
-
-        let intersection = line1.intersect_with_line(&line2);
-        assert_eq!(intersection, Some(Vector { x: 3.0, y: 4.0 }));
-    }
-
-    #[test]
-    fn test_intersect_with_2() {
-        let line1 = Line {
-            origin: Vector { x: 1.0, y: 1.0 },
-            direction: Vector { x: 2.0, y: 2.0 },
-        };
-        let line2 = Line {
-            origin: Vector { x: 2.0, y: 1.0 },
-            direction: Vector { x: -1.0, y: 2.0 },
-        };
-
-        let intersection = line1.intersect_with_line(&line2).map(|v| v.round(3));
-        assert_eq!(intersection, Some(Vector { x: 1.667, y: 1.667 }));
-    }
-
-    #[test]
-    fn test_intersect_with_3() {
-        let line1 = Line {
-            origin: Vector { x: 0.0, y: 0.0 },
-            direction: Vector { x: 1.0, y: 0.0 },
-        };
-        let line2 = Line {
-            origin: Vector { x: 0.0, y: 1.0 },
-            direction: Vector { x: 1.0, y: 0.0 },
-        };
-
-        let intersection = line1.intersect_with_line(&line2);
-        assert_eq!(intersection, None);
-    }
-
-    #[test]
-    fn test_intersect_with_4() {
-        let line1 = Line {
-            origin: Vector { x: 0.0, y: 0.0 },
-            direction: Vector { x: 1.0, y: 0.0 },
-        };
-        let line2 = Line {
-            origin: Vector { x: 1.0, y: 1.0 },
-            direction: Vector { x: 0.0, y: -1.0 },
-        };
-
-        let intersection = line1.intersect_with_line(&line2);
-        assert_eq!(intersection, Some(Vector { x: 1.0, y: 0.0 }));
-    }
-
-    #[test]
-    fn test_distance() {
-        let right = Line {
-            origin: Vector { x: 0.0, y: 0.0 },
-            direction: Vector { x: 1.0, y: 0.0 },
-        };
-
-        assert_eq!(right.distance(&Vector::new(1.0, 1.0)), 1.0);
-        assert_eq!(right.distance(&Vector::new(10.0, 0.0)), 0.0);
-        assert_eq!(right.distance(&Vector::new(1.0, -2.0)), -2.0);
-
-        let up = Line {
-            origin: Vector { x: 1.0, y: 1.0 },
-            direction: Vector { x: 0.0, y: 1.0 },
-        };
-        assert_eq!(up.distance(&Vector::new(0.0, 0.0)), 1.0);
     }
 }

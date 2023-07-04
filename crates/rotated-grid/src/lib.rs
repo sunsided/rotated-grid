@@ -207,6 +207,9 @@ impl Iterator for GridPositionIterator {
                 self.current_y += self.dy;
             }
 
+            // TODO: Initialize current_x such that unrotated_x never is <= x0
+            // TODO: Initialize current_x such that unrotated_x never is <= x0
+
             // Check if the grid position is within the original rectangle.
             if unrotated_x >= self.x0
                 && unrotated_x <= self.x0 + self.width
@@ -239,5 +242,61 @@ impl Iterator for GridPositionIterator {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, Some(self.estimate_max_grid_points()))
+    }
+}
+
+fn find_t(x0: f64, dx: f64, x1: f64) -> Option<f64> {
+    if dx == 0.0 {
+        if x1 <= x0 {
+            return Some(x0);
+        }
+
+        // Since x0 is zero there are no increments that lift
+        // the coordinate away from x0, hence there is no solution.
+        return None;
+    }
+
+    let t = ((x1 - x0) / dx).ceil();
+    Some(t)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_find_t_pos() {
+        let x0: f64 = 2.0;
+        let dx: f64 = 1.5;
+        let x1: f64 = 7.0;
+
+        assert_eq!(find_t(x0, dx, x1), Some(4.0));
+    }
+
+    #[test]
+    fn test_find_t_neg() {
+        let x0: f64 = 2.0;
+        let dx: f64 = 1.5;
+        let x1: f64 = -7.0;
+
+        assert_eq!(find_t(x0, dx, x1), Some(-6.0));
+    }
+
+    #[test]
+    fn test_find_t_invalid() {
+        let x0: f64 = 2.0;
+        let dx: f64 = 0.0;
+        let x1: f64 = -7.0;
+
+        assert_eq!(find_t(x0, dx, x1), Some(2.0));
+    }
+
+    #[test]
+    fn test_find_t_impossible() {
+        let x0: f64 = 2.0;
+        let dx: f64 = 0.0;
+        let x1: f64 = 7.0;
+
+        assert_eq!(find_t(x0, dx, x1), None);
     }
 }
