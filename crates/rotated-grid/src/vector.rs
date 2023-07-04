@@ -47,6 +47,14 @@ impl Vector {
         }
     }
 
+    /// Rotates the vector counterclockwise by the specified angle expressed as its sine and cosine.
+    pub fn rotate_with(&self, sin: f64, cos: f64) -> Self {
+        Self {
+            x: self.x * cos - self.y * sin,
+            y: self.x * sin + self.y * cos,
+        }
+    }
+
     /// Rotates the vector counterclockwise by the specified angle.
     pub fn rotate_around(&self, pivot: &Self, angle: Angle) -> Self {
         let (sin, cos) = angle.sin_cos();
@@ -56,6 +64,36 @@ impl Vector {
 
         let x = x0 * cos - y0 * sin;
         let y = x0 * sin + y0 * cos;
+
+        Self {
+            x: x + pivot.x,
+            y: y + pivot.y,
+        }
+    }
+
+    /// Rotates the vector counterclockwise by the specified angle expressed as its sine and cosine.
+    pub fn rotate_around_with(&self, pivot: &Self, sin: f64, cos: f64) -> Self {
+        let x0 = self.x - pivot.x;
+        let y0 = self.y - pivot.y;
+
+        let x = x0 * cos - y0 * sin;
+        let y = x0 * sin + y0 * cos;
+
+        Self {
+            x: x + pivot.x,
+            y: y + pivot.y,
+        }
+    }
+
+    /// Rotates the vector counterclockwise by the specified angle.
+    pub fn rotate_around_screenspace(&self, pivot: &Self, angle: Angle) -> Self {
+        let (sin, cos) = angle.sin_cos();
+
+        let x0 = self.x - pivot.x;
+        let y0 = self.y - pivot.y;
+
+        let x = x0 * cos + y0 * sin;
+        let y = -x0 * sin + y0 * cos;
 
         Self {
             x: x + pivot.x,

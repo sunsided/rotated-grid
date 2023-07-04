@@ -6,10 +6,12 @@ use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
-    const HEIGHT: usize = 480;
+    const HEIGHT: usize = 440;
     const ANIMATE: bool = false;
 
     let grids = [
+        ("Test", 45.0),
+        //
         ("Cyan", 15.0),
         ("Magenta", 75.0),
         ("Yellow", 0.0),
@@ -20,8 +22,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let window_name = format!("{name} at {angle}°");
 
         let grid = GridPositionIterator::new(
-            WIDTH as _,
-            HEIGHT as _,
+            600 as _,
+            400 as _,
             7.0,
             7.0,
             0.0,
@@ -37,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         for GridCoord { x, y } in grid {
             count += 1;
 
-            let center = Point::new(x as _, y as _);
+            let center = Point::new(x as i32 + 20, y as i32 + 20);
             let radius = 1;
             let color = Scalar::from(255.0);
             circle(&mut image, center, radius, color, FILLED, LINE_AA, 0)?;

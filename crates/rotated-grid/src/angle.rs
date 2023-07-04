@@ -1,3 +1,5 @@
+use std::ops::Neg;
+
 /// An angle expressed in radians.
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
 pub struct Angle<T = f64>(T);
@@ -41,5 +43,13 @@ impl AngleOps<f64> for Angle<f64> {
 impl<T: Default> Default for Angle<T> {
     fn default() -> Self {
         Self(T::default())
+    }
+}
+
+impl Neg for Angle<f64> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self(-self.0)
     }
 }

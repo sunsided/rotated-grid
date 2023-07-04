@@ -80,6 +80,33 @@ impl Line {
         }
     }
 
+    pub fn calculate_intersection_t(&self, other: &Self, max_u: f64) -> Option<f64> {
+        let det = self.direction.x * other.direction.y - other.direction.x * self.direction.y;
+        if det.abs() < 1e-6 {
+            // Lines are either parallel or coincident
+            return None;
+        }
+        // Length along self to the point of intersection.
+        let t = (other.direction.x * (self.origin.y - other.origin.y)
+            - other.direction.y * (self.origin.x - other.origin.x))
+            / det;
+
+        // Length along other to the point of intersection.
+        let u = (self.direction.x * (self.origin.y - other.origin.y)
+            - self.direction.y * (self.origin.x - other.origin.x))
+            / det;
+
+        let u = ((self.origin.x + t * self.direction.x - other.origin.x) * other.direction.x
+            + (self.origin.y + t * self.direction.y - other.origin.y) * other.direction.y)
+            / max_u;
+
+        if t >= 0.0 && u >= 0.0 && u <= max_u {
+            Some(t)
+        } else {
+            None
+        }
+    }
+
     /// Determines the distance of the line to a point.
     /// If the returned distance is positive, the point lies to the left of the line.
     pub fn distance(&self, point: &Vector) -> f64 {

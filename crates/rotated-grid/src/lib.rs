@@ -80,6 +80,10 @@ pub struct GridPositionIterator {
     cos_alpha: f64,
     current_x: f64,
     current_y: f64,
+    top: Line,
+    left: Line,
+    bottom: Line,
+    right: Line,
     #[cfg(debug_assertions)]
     hits: u64,
     #[cfg(debug_assertions)]
@@ -111,8 +115,8 @@ impl GridPositionIterator {
         assert!(width > 0.0);
         assert!(height > 0.0);
 
-        let alpha = Self::normalize_angle(alpha.into_radians());
-        let (sin_alpha, cos_alpha) = alpha.sin_cos();
+        let alpha_rad = Self::normalize_angle(alpha.into_radians());
+        let (sin_alpha, cos_alpha) = alpha_rad.sin_cos();
 
         // Calculate the dimensions of the rotated grid
         let rotated_width = (width.abs() * cos_alpha) + (height.abs() * sin_alpha);
@@ -125,6 +129,21 @@ impl GridPositionIterator {
         // Calculate the starting point of the rotated grid.
         let start_x = center_x - (rotated_width * 0.5);
         let start_y = center_y - (rotated_height * 0.5);
+
+        // Rotate clockwise in order to swap between mathematical and image coordinate systems.
+        // let center = Vector::new(center_x, center_y);
+        let offset = Vector::new(x0, y0);
+
+        // let alpha = Angle::from_radians(alpha_rad);
+        let tl = (Vector::new(0.0, 0.0) + offset); //.rotate_around(&center, alpha);
+        let tr = (Vector::new(width, 0.0) + offset); //.rotate_around(&center, alpha);
+        let bl = (Vector::new(0.0, height) + offset); //.rotate_around(&center, alpha);
+        let br = (Vector::new(width, height) + offset); //.rotate_around(&center, alpha);
+
+        let top = Line::from_points(tr, &tl);
+        let left = Line::from_points(tl, &bl);
+        let bottom = Line::from_points(bl, &br);
+        let right = Line::from_points(br, &tr);
 
         let iterator = GridPositionIterator {
             width,
@@ -141,6 +160,10 @@ impl GridPositionIterator {
             start_y,
             sin_alpha,
             cos_alpha,
+            top,
+            left,
+            bottom,
+            right,
             current_x: 0.0,
             current_y: 0.0,
             #[cfg(debug_assertions)]
@@ -181,6 +204,27 @@ impl GridPositionIterator {
     }
 }
 
+fn calculate_intersection_t(
+    x0_scanline: f64,
+    y0_scanline: f64,
+    dx_scanline: f64,
+    dy_scanline: f64,
+    x0_edge: f64,
+    y0_edge: f64,
+    dx_edge: f64,
+    dy_edge: f64,
+) -> Option<f64> {
+    let det = dx_scanline * dy_edge - dx_edge * dy_scanline;
+
+    if det.abs() < 1e-6 {
+        // Lines are either parallel or coincident
+        None
+    } else {
+        let t = (dx_edge * (y0_scanline - y0_edge) - dy_edge * (x0_scanline - x0_edge)) / det;
+        Some(t)
+    }
+}
+
 impl Iterator for GridPositionIterator {
     type Item = GridCoord;
 
@@ -200,6 +244,37 @@ impl Iterator for GridPositionIterator {
             let unrotated_y =
                 (x - self.center_x) * inv_sin + (y - self.center_y) * inv_cos + self.center_y;
 
+            let center = Vector::new(self.center_x, self.center_y);
+            let ray = Line::new(
+                Vector::new(self.start_x, y).rotate_around_with(&center, inv_sin, cos),
+                Vector::new(1.0, 0.0).rotate_with(inv_sin, cos),
+            );
+
+            let left = ray
+                .calculate_intersection_t(&self.left, self.height)
+                .unwrap_or(f64::NAN);
+            let top = ray
+                .calculate_intersection_t(&self.top, self.width)
+                .unwrap_or(f64::NAN);
+            let right = ray
+                .calculate_intersection_t(&self.right, self.height)
+                .unwrap_or(f64::NAN);
+            let bottom = ray
+                .calculate_intersection_t(&self.bottom, self.width)
+                .unwrap_or(f64::NAN);
+
+            let thresholds = [left, top, right, bottom];
+            let mut min = f64::NAN;
+            let mut max = f64::NAN;
+            for value in thresholds {
+                if min.is_nan() || value < min {
+                    min = value;
+                }
+                if max.is_nan() || value > max {
+                    max = value;
+                }
+            }
+
             // Update the current position.
             self.current_x += self.dx;
             if self.current_x > self.rotated_width {
@@ -216,6 +291,9 @@ impl Iterator for GridPositionIterator {
                 && unrotated_y >= self.y0
                 && unrotated_y <= self.y0 + self.height
             {
+                debug_assert!(x >= min);
+                debug_assert!(x <= max);
+
                 #[cfg(debug_assertions)]
                 {
                     self.hits += 1;
