@@ -30,14 +30,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Note that the calculations are defined for the rotation angles of 0..90 degrees!
     let mut angle = 0.0;
     let mut increment = 0.3;
+    let min_angle = 0.0; // TODO: Allow for negative angles (e.g. -90).
+    let max_angle = 90.0;
     loop {
         angle += increment;
-        if angle >= 90.0 {
+        if angle >= max_angle {
             increment *= -1.0;
-            angle = 90.0;
-        } else if angle < 0.0 {
+            angle = max_angle;
+        } else if angle < min_angle {
             increment *= -1.0;
-            angle = 0.0;
+            angle = min_angle;
         }
 
         let angle = Angle::from_degrees(angle as _);
@@ -92,20 +94,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Determine (half) the number and offset of rows in rotated space.
         let y_count_half = ((extent.y / dy) * 0.5).floor();
         let mut y = center.y - y_count_half * dy;
-        let x = tl.x;
         while y < bl.y {
             // Draw the rows.
-            let start = Vector::new(x, y);
-            let end = Vector::new(x + extent.x, y);
-            draw_line(
-                &mut image,
-                &start,
-                &end,
-                Scalar::new(145.0, 110.0, 69.0, 0.0),
-            )?;
+            let x = tl.x;
+            let row_start = Vector::new(x, y);
+            let row_end = Vector::new(x + extent.x, y);
 
             // Determine the intersection of the ray from the given row with the rectangle.
-            let ray = Line::from_points(start, &end);
+            let ray = Line::from_points(row_start, &row_end);
             if let Some((start, end)) = find_intersections(
                 &ray,
                 &rect_top,
@@ -122,6 +118,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                     &end,
                     Scalar::new(255.0, 0.0, 255.0, 0.0),
                 )?;
+
+                // Determine (half) the number and offset of columns in rotated space, along the row.
+                let x_count_half = ((extent.x / dx) * 0.5).floor();
+                let x0 = center.x - (x_count_half * dx);
+                let mut x = ((start.x - x0) / dx).ceil() * dx + x0;
+                while x < end.x {
+                    let point = Vector::new(x, y);
+                    draw_point_small(&mut image, &point, Scalar::new(145.0, 110.0, 69.0, 0.0))?;
+                    x += dx;
+                }
             }
 
             y += dy;
@@ -169,6 +175,15 @@ fn draw_point(
     color: VecN<f64, 4>,
 ) -> Result<(), Box<dyn Error>> {
     circle(&mut image, vec2point(point), 4, color, FILLED, LINE_AA, 0)?;
+    Ok(())
+}
+
+fn draw_point_small(
+    mut image: &mut Mat,
+    point: &Vector,
+    color: VecN<f64, 4>,
+) -> Result<(), Box<dyn Error>> {
+    circle(&mut image, vec2point(point), 2, color, FILLED, LINE_AA, 0)?;
     Ok(())
 }
 
