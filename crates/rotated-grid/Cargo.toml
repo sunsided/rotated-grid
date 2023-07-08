@@ -9,3 +9,10 @@ repository = "https://github.com/sunsided/rotated-grid"
 license = "EUPL-1.2"
 readme = "../../README.md"
 rust-version = "1.59"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "benchmark"
+harness = false
