@@ -1,27 +1,26 @@
-use opencv::core::{Mat, Point, Scalar, CV_8UC1};
+use opencv::core::{Mat, Point, Scalar, CV_32FC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
-use rotated_grid::{Angle, GridPoint, GridPositionIterator};
+use rotated_grid::{Angle, GridCoord, GridPositionIterator};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
-    const HEIGHT: usize = 480;
-    const ANIMATE: bool = false;
+    const HEIGHT: usize = 440;
 
     let grids = [
-        ("Cyan", 15.0),
-        ("Magenta", 75.0),
-        ("Yellow", 0.0),
-        ("Black", 45.0),
+        ("Cyan", 15.0, (255.0, 255.0, 178.0, 0.0)),
+        ("Magenta", 75.0, (255.0, 178.0, 255.0, 0.0)),
+        ("Yellow", 0.0, (178.0, 255.0, 255.0, 0.0)),
+        ("Key", 45.0, (178.0, 178.0, 178.0, 0.0)),
     ];
 
-    for (name, angle) in grids {
+    for (name, angle, color) in grids {
         let window_name = format!("{name} at {angle}°");
 
         let grid = GridPositionIterator::new(
-            WIDTH as _,
-            HEIGHT as _,
+            600 as _,
+            400 as _,
             7.0,
             7.0,
             0.0,
@@ -33,24 +32,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut count = 0;
 
         let mut image =
-            Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC1, Scalar::default())?;
-        for GridPoint { x, y } in grid {
+            Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_32FC3, Scalar::default())?;
+        for GridCoord { x, y } in grid {
             count += 1;
 
-            let center = Point::new(x as _, y as _);
+            let center = Point::new(x as i32 + 20, y as i32 + 20);
             let radius = 1;
-            let color = Scalar::from(255.0);
+            let color = Scalar::from(color) / 255.0;
             circle(&mut image, center, radius, color, FILLED, LINE_AA, 0)?;
-
-            imshow(&window_name, &image)?;
-
-            if ANIMATE {
-                if wait_key(1)? > 0 {
-                    return Ok(());
-                }
-            }
         }
 
+        imshow(&window_name, &image)?;
         println!("{window_name}: Expected count: {expected_count:?}, actual count: {count}");
     }
 

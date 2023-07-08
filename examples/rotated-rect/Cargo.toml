@@ -1,9 +1,7 @@
 [package]
-name = "cmyk"
-description = "CMYK halftone dithering example"
+name = "rotated-rect"
 version = "0.1.0"
 edition = "2021"
-keywords = ["halftone", "image-processing", "grid"]
 repository = "https://github.com/sunsided/rotated-grid"
 publish = false
 
