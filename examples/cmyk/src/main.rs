@@ -1,6 +1,4 @@
-use opencv::core::{
-    add, add_weighted, divide, no_array, subtract, Mat, Point, Scalar, CV_32FC3, CV_8UC1, CV_8UC3,
-};
+use opencv::core::{add, divide, no_array, subtract, Mat, Point, Scalar, CV_32FC3, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
 use rotated_grid::{Angle, GridCoord, GridPositionIterator};
@@ -9,7 +7,6 @@ use std::error::Error;
 fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
     const HEIGHT: usize = 440;
-    const ANIMATE: bool = false;
 
     // A faux CMYK mix.
     let mut mix =

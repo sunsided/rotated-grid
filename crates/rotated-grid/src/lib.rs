@@ -179,9 +179,9 @@ impl GridPositionIterator {
     /// Provides an estimated upper bound for the number of grid points.
     /// This is only correct for unrotated grids; rotated grids produce smaller values.
     fn estimate_max_grid_points(&self) -> usize {
-        let num_points_x = (self.width / self.dx).ceil() as usize;
-        let num_points_y = (self.height / self.dy).ceil() as usize;
-        num_points_x * num_points_y
+        let num_points_x = (self.width + self.dx) / self.dx;
+        let num_points_y = (self.height + self.dy) / self.dy;
+        (num_points_x * num_points_y).ceil() as _
     }
 
     /// Normalizes the specified angle such that it falls into range -PI/2..PI/2.
@@ -283,7 +283,12 @@ impl Iterator for GridPositionIterator {
             if x > self.start_x + self.rotated_width || y > self.start_y + self.rotated_height {
                 #[cfg(debug_assertions)]
                 {
-                    debug_assert!(self.hits as usize <= self.estimate_max_grid_points());
+                    debug_assert!(
+                        self.hits as usize <= self.estimate_max_grid_points(),
+                        "Require {actual} <= {expected}",
+                        actual = self.hits,
+                        expected = self.estimate_max_grid_points()
+                    );
                 }
                 return None;
             }
