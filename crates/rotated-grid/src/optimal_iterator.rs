@@ -1,5 +1,8 @@
-use crate::{Angle, GridCoord, Line, LineSegment, Vector};
+use crate::{Angle, Line, LineSegment, Vector};
 
+/// An iterator for grid coordinates in rotated rectangle space.
+/// Only coordinates that are guaranteed to lie within the original
+/// axis-aligned rectangle are produced.
 pub struct OptimalIterator {
     y: f64,
     tl: Vector,
@@ -8,10 +11,8 @@ pub struct OptimalIterator {
     br: Vector,
     center: Vector,
     extent: Vector,
-    dx: f64, // TODO: Summarize into vector
-    dy: f64,
-    x0: f64, // TODO: Summarize into vector
-    y0: f64,
+    delta: Vector,
+    offset: Vector,
     rect_width: f64, // TODO: Summarize into vector
     rect_height: f64,
     /// The line segment describing the top edge of the rotated rectangle.
@@ -83,10 +84,8 @@ impl OptimalIterator {
             br,
             center,
             extent,
-            dx,
-            dy,
-            x0,
-            y0,
+            delta: Vector::new(dx, dy),
+            offset: Vector::new(x0, y0),
             rect_width,
             rect_height,
             rect_top,
@@ -97,6 +96,11 @@ impl OptimalIterator {
             cos,
             x_iter: None,
         }
+    }
+
+    /// Returns the center of the rectangle.
+    pub fn center(&self) -> &Vector {
+        &self.center
     }
 
     /// Finds the intersection point that is furthest from the specified line's origin,
@@ -140,7 +144,7 @@ impl OptimalIterator {
 }
 
 impl Iterator for OptimalIterator {
-    type Item = (Vector, GridCoord);
+    type Item = Vector;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -149,11 +153,11 @@ impl Iterator for OptimalIterator {
             }
 
             if let Some(iter) = self.x_iter.as_mut() {
-                if let Some((x, grid_coord)) = iter.next() {
-                    return Some((Vector::new(x, self.y), grid_coord));
+                if let Some(x) = iter.next() {
+                    return Some(Vector::new(x, self.y));
                 }
 
-                self.y += self.dy;
+                self.y += self.delta.y;
             }
 
             // Obtain the rows.
@@ -170,10 +174,8 @@ impl Iterator for OptimalIterator {
                     self.extent,
                     start,
                     end,
-                    self.dx,
-                    self.x0,
-                    self.sin,
-                    self.cos,
+                    self.delta.x,
+                    self.offset.x,
                 ));
             }
         }
@@ -185,10 +187,7 @@ pub struct OptimalXIterator {
     x: f64,
     y: f64,
     dx: f64,
-    center: Vector,
     row_end: f64,
-    inv_sin: f64,
-    inv_cos: f64,
 }
 
 impl OptimalXIterator {
@@ -200,8 +199,6 @@ impl OptimalXIterator {
         row_end: Vector,
         dx: f64,
         x0: f64,
-        sin: f64,
-        cos: f64,
     ) -> Self {
         // Determine the first x coordinate along the row that is
         // an integer multiple of dx away from the center and larger
@@ -213,33 +210,22 @@ impl OptimalXIterator {
         Self {
             x,
             y,
-            center,
             dx,
             row_end: row_end.x,
-            inv_sin: -sin,
-            inv_cos: cos,
         }
     }
 }
 
 impl Iterator for OptimalXIterator {
-    type Item = (f64, GridCoord);
+    type Item = f64;
 
     fn next(&mut self) -> Option<Self::Item> {
         let x = self.x;
-        let y = self.y;
         if x > self.row_end {
             return None;
         }
 
-        // TODO: Extract this again from this iterator?
-        // Un-rotate the point.
-        let unrotated_x =
-            (x - self.center.x) * self.inv_cos - (y - self.center.y) * self.inv_sin + self.center.x;
-        let unrotated_y =
-            (x - self.center.x) * self.inv_sin + (y - self.center.y) * self.inv_cos + self.center.y;
-
         self.x += self.dx;
-        Some((x, GridCoord::new(unrotated_x, unrotated_y)))
+        Some(x)
     }
 }

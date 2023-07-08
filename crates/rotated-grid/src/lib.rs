@@ -71,6 +71,8 @@ pub struct GridPositionIterator {
     height: f64,
     dx: f64,
     dy: f64,
+    inv_sin: f64,
+    inv_cos: f64,
     inner: OptimalIterator,
 }
 
@@ -102,12 +104,17 @@ impl GridPositionIterator {
         let bl = Vector::new(0.0, height);
         let br = Vector::new(width, height);
 
+        let alpha = alpha.normalize();
+        let (sin, cos) = alpha.sin_cos();
+
         Self {
             width,
             height,
             dx,
             dy,
-            inner: OptimalIterator::new(tl, tr, bl, br, alpha.normalize(), dx, dy, x0, y0),
+            inv_sin: -sin,
+            inv_cos: cos,
+            inner: OptimalIterator::new(tl, tr, bl, br, alpha, dx, dy, x0, y0),
         }
     }
 
@@ -124,8 +131,18 @@ impl Iterator for GridPositionIterator {
     type Item = GridCoord;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some((_, grid_coord)) = self.inner.next() {
-            Some(grid_coord)
+        if let Some(point) = self.inner.next() {
+            let x = point.x;
+            let y = point.y;
+            let center = self.inner.center();
+
+            // Un-rotate the point.
+            let unrotated_x =
+                (x - center.x) * self.inv_cos - (y - center.y) * self.inv_sin + center.x;
+            let unrotated_y =
+                (x - center.x) * self.inv_sin + (y - center.y) * self.inv_cos + center.y;
+
+            Some(GridCoord::new(unrotated_x, unrotated_y))
         } else {
             None
         }
