@@ -1,11 +1,11 @@
 [package]
 name = "rotated-grid"
 description = "Rotated grid calculations for CMYK halftone dithering and more"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 keywords = ["halftone", "image-processing", "grid"]
 categories = ["multimedia::images", "mathematics"]
 repository = "https://github.com/sunsided/rotated-grid"
-license-file = "../../LICENSE.md"
+license = "EUPL-1.2"
 readme = "../../README.md"
 rust-version = "1.59"
