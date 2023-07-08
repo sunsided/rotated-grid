@@ -22,7 +22,7 @@ impl Line {
 
     /// Constructs a line through two points.
     pub fn from_points(a: Vector, b: &Vector) -> Self {
-        Self::new(a, (*b - a))
+        Self::new(a, *b - a)
     }
 
     pub fn dot(&self, point: &Vector) -> f64 {
@@ -92,10 +92,6 @@ impl Line {
             / det;
 
         // Length along other to the point of intersection.
-        let u = (self.direction.x * (self.origin.y - other.origin.y)
-            - self.direction.y * (self.origin.x - other.origin.x))
-            / det;
-
         let u = ((self.origin.x + t * self.direction.x - other.origin.x) * other.direction.x
             + (self.origin.y + t * self.direction.y - other.origin.y) * other.direction.y)
             / max_u;

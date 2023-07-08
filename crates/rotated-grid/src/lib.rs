@@ -135,10 +135,10 @@ impl GridPositionIterator {
         let offset = Vector::new(x0, y0);
 
         // let alpha = Angle::from_radians(alpha_rad);
-        let tl = (Vector::new(0.0, 0.0) + offset); //.rotate_around(&center, alpha);
-        let tr = (Vector::new(width, 0.0) + offset); //.rotate_around(&center, alpha);
-        let bl = (Vector::new(0.0, height) + offset); //.rotate_around(&center, alpha);
-        let br = (Vector::new(width, height) + offset); //.rotate_around(&center, alpha);
+        let tl = Vector::new(0.0, 0.0) + offset; //.rotate_around(&center, alpha);
+        let tr = Vector::new(width, 0.0) + offset; //.rotate_around(&center, alpha);
+        let bl = Vector::new(0.0, height) + offset; //.rotate_around(&center, alpha);
+        let br = Vector::new(width, height) + offset; //.rotate_around(&center, alpha);
 
         let top = Line::from_points(tr, &tl);
         let left = Line::from_points(tl, &bl);
@@ -201,27 +201,6 @@ impl GridPositionIterator {
             alpha += HALF_PI;
         }
         alpha
-    }
-}
-
-fn calculate_intersection_t(
-    x0_scanline: f64,
-    y0_scanline: f64,
-    dx_scanline: f64,
-    dy_scanline: f64,
-    x0_edge: f64,
-    y0_edge: f64,
-    dx_edge: f64,
-    dy_edge: f64,
-) -> Option<f64> {
-    let det = dx_scanline * dy_edge - dx_edge * dy_scanline;
-
-    if det.abs() < 1e-6 {
-        // Lines are either parallel or coincident
-        None
-    } else {
-        let t = (dx_edge * (y0_scanline - y0_edge) - dy_edge * (x0_scanline - x0_edge)) / det;
-        Some(t)
     }
 }
 
@@ -321,21 +300,6 @@ impl Iterator for GridPositionIterator {
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, Some(self.estimate_max_grid_points()))
     }
-}
-
-fn find_t(x0: f64, dx: f64, x1: f64) -> Option<f64> {
-    if dx == 0.0 {
-        if x1 <= x0 {
-            return Some(x0);
-        }
-
-        // Since x0 is zero there are no increments that lift
-        // the coordinate away from x0, hence there is no solution.
-        return None;
-    }
-
-    let t = ((x1 - x0) / dx).ceil();
-    Some(t)
 }
 
 #[cfg(test)]

@@ -20,7 +20,7 @@ impl LineSegment {
 
     /// Constructs a line through two points.
     pub fn from_points(a: Vector, b: &Vector) -> Self {
-        Self::new(a, (*b - a))
+        Self::new(a, *b - a)
     }
 
     /// Gets a normalized length version of the line.

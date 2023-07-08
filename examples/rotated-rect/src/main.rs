@@ -1,4 +1,4 @@
-use opencv::core::{norm, Mat, Point, Scalar, Scalar_, VecN, CV_8UC1, CV_8UC3};
+use opencv::core::{Mat, Point, Scalar, Scalar_, VecN, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, line, FILLED, LINE_AA};
 use opencv::prelude::*;
@@ -78,8 +78,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             extent.x * cos + extent.y * sin,
             extent.x * sin + extent.y * cos,
         );
-        let tl = (center - extent * 0.5);
-        let br = (center + extent * 0.5);
+        let tl = center - extent * 0.5;
+        let br = center + extent * 0.5;
         let tr = Vector::new(br.x, tl.y);
         let bl = Vector::new(tl.x, br.y);
         draw_rectangle(
@@ -187,55 +187,6 @@ fn draw_point_small(
     Ok(())
 }
 
-fn render_outside_part(
-    mut image: &mut Mat,
-    corner: &Vector,
-    up_l: &Line,
-    intersect: &Vector,
-    length_inside_sq: f64,
-) -> Result<(), Box<dyn Error>> {
-    let dist_to_corner = up_l.dot(&corner);
-    let dist_to_corner_sq = dist_to_corner * dist_to_corner;
-    if dist_to_corner > 0.0 && dist_to_corner_sq > length_inside_sq {
-        let topmost = up_l.clone() * dist_to_corner;
-
-        let color = Scalar::from((0.0, 0.0, 255.0, 0.0));
-
-        line(
-            &mut image,
-            vec2point(&intersect),
-            vec2point(&topmost),
-            Scalar::default(),
-            1,
-            LINE_AA,
-            0,
-        )?;
-
-        circle(
-            &mut image,
-            vec2point(&topmost),
-            4,
-            color,
-            FILLED,
-            LINE_AA,
-            0,
-        )?;
-
-        circle(&mut image, vec2point(&corner), 4, color, FILLED, LINE_AA, 0)?;
-
-        line(
-            &mut image,
-            vec2point(&corner),
-            vec2point(&topmost),
-            color,
-            1,
-            LINE_AA,
-            0,
-        )?;
-    }
-    Ok(())
-}
-
 /// Finds the intersection point that is furthest from the specified line's origin,
 /// assuming the line's origin already is an intersection point.
 fn find_intersections(
@@ -278,85 +229,6 @@ fn find_intersections(
     } else {
         None
     }
-}
-
-/// Finds the intersection point that is furthest from the specified line's origin,
-/// assuming the line's origin already is an intersection point.
-fn find_other_intersection(
-    orthogonal: &Line,
-    top: &LineSegment,
-    left: &LineSegment,
-    bottom: &LineSegment,
-    right: &LineSegment,
-) -> Option<Vector> {
-    let intersect_top = orthogonal.intersect_with_segment(&top);
-    let intersect_bottom = orthogonal.intersect_with_segment(&bottom);
-    let intersect_left = orthogonal.intersect_with_segment(&left);
-    let intersect_right = orthogonal.intersect_with_segment(&right);
-
-    let mut other_intersect = match intersect_top
-        .or(intersect_bottom)
-        .or(intersect_left)
-        .or(intersect_right)
-    {
-        None => return None,
-        Some(point) => point,
-    };
-
-    let current_len_sq = (other_intersect - *orthogonal.origin()).norm_sq();
-
-    if let Some(other) = intersect_top {
-        let len_sq = (other - other_intersect).norm_sq();
-        if len_sq > current_len_sq {
-            return Some(other);
-        }
-    }
-
-    if let Some(other) = intersect_left {
-        let len_sq = (other - other_intersect).norm_sq();
-        if len_sq > current_len_sq {
-            return Some(other);
-        }
-    }
-
-    if let Some(other) = intersect_bottom {
-        let len_sq = (other - other_intersect).norm_sq();
-        if len_sq > current_len_sq {
-            return Some(other);
-        }
-    }
-
-    if let Some(other) = intersect_right {
-        let len_sq = (other - other_intersect).norm_sq();
-        if len_sq > current_len_sq {
-            return Some(other);
-        }
-    }
-
-    // The points coincide, or there was exactly one result.
-    if current_len_sq > 1e-4 {
-        Some(other_intersect)
-    } else {
-        None
-    }
-}
-
-fn intersect_with_rectangle(
-    up_direction: &Line,
-    top: &LineSegment,
-    left: &LineSegment,
-    bottom: &LineSegment,
-    right: &LineSegment,
-) -> Vector {
-    let intersect_top = up_direction.intersect_with_segment(&top);
-    let intersect_bottom = up_direction.intersect_with_segment(&bottom);
-    let intersect_left = up_direction.intersect_with_segment(&left);
-    let intersect_right = up_direction.intersect_with_segment(&right);
-    intersect_top
-        .or(intersect_left)
-        .or(intersect_bottom)
-        .or(intersect_right)
-        .expect("line intersects with at least one edge")
 }
 
 fn draw_rectangle(
