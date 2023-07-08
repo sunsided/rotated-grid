@@ -17,7 +17,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let bg_color = Scalar::from((255.0, 255.0, 255.0, 0.0));
 
-    let mut image = Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, bg_color)?;
+    let mut rotated_space =
+        Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, bg_color)?;
+    let mut unrotated_space =
+        Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, bg_color)?;
 
     // Form the regular rectangle.
     let tl = Vector::new(150.0, 130.0);
@@ -36,8 +39,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let min_angle = 0.0; // TODO: Allow for negative angles (e.g. -90).
     let max_angle = 90.0;
 
-    let mut rotate_angle = 0.0f64;
+    let mut offset_rotation_angle = 0.0f64;
     loop {
+        // Rotate the grid.
         angle += increment;
         if angle >= max_angle {
             increment *= -1.0;
@@ -47,35 +51,40 @@ fn main() -> Result<(), Box<dyn Error>> {
             angle = min_angle;
         }
 
-        let (s, c) = rotate_angle.sin_cos();
-        let x0 = x0_ * c + y0_ * s;
-        let y0 = x0_ * s - y0_ * c;
-        rotate_angle += 0.1;
+        // Rotate the x0/y0 offset for the effect.
+        let (offset_sin, offset_cos) = offset_rotation_angle.sin_cos();
+        let x0 = x0_ * offset_cos + y0_ * offset_sin;
+        let y0 = x0_ * offset_sin - y0_ * offset_cos;
+        offset_rotation_angle += 0.1;
 
         let angle = Angle::from_degrees(angle as _);
         let (sin, cos) = angle.sin_cos();
-        image.set(bg_color)?;
 
         // The center rectangle.
         draw_line(
-            &mut image,
+            &mut rotated_space,
             &Vector::new(0.0, center.y),
             &Vector::new(WIDTH as _, center.y),
             Scalar::new(19.0, 44.0, 255.0, 0.0),
         )?;
         draw_line(
-            &mut image,
+            &mut rotated_space,
             &Vector::new(center.x, 0.0),
             &Vector::new(center.x, HEIGHT as _),
             Scalar::new(19.0, 44.0, 255.0, 0.0),
         )?;
 
+        // Unrotated rectangle.
+        unrotated_space.set(bg_color)?;
+        draw_rectangle(&mut unrotated_space, &tl, &tr, &bl, &br, Scalar::default())?;
+
         // The rotated rectangle.
+        rotated_space.set(bg_color)?;
         let tl = tl.rotate_around(&center, angle);
         let tr = tr.rotate_around(&center, angle);
         let bl = bl.rotate_around(&center, angle);
         let br = br.rotate_around(&center, angle);
-        draw_rectangle(&mut image, &tl, &tr, &bl, &br, Scalar::default())?;
+        draw_rectangle(&mut rotated_space, &tl, &tr, &bl, &br, Scalar::default())?;
 
         // Determine line segments describing the rotated rectangle.
         let rect_top = LineSegment::from_points(tr, &tl);
@@ -93,7 +102,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let tr = Vector::new(br.x, tl.y);
         let bl = Vector::new(tl.x, br.y);
         draw_rectangle(
-            &mut image,
+            &mut rotated_space,
             &tl,
             &tr,
             &bl,
@@ -123,9 +132,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 extent.x,
                 extent.y,
             ) {
-                draw_point(&mut image, &start, Scalar::new(255.0, 0.0, 255.0, 0.0))?;
+                draw_point(
+                    &mut rotated_space,
+                    &start,
+                    Scalar::new(255.0, 0.0, 255.0, 0.0),
+                )?;
                 draw_line_with_dot(
-                    &mut image,
+                    &mut rotated_space,
                     &start,
                     &end,
                     Scalar::new(255.0, 0.0, 255.0, 0.0),
@@ -137,7 +150,26 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let mut x = ((start.x - start_x) / dx).ceil() * dx + start_x;
                 while x < end.x {
                     let point = Vector::new(x, y);
-                    draw_point_small(&mut image, &point, Scalar::new(145.0, 110.0, 69.0, 0.0))?;
+                    draw_point_small(
+                        &mut rotated_space,
+                        &point,
+                        Scalar::new(145.0, 110.0, 69.0, 0.0),
+                    )?;
+
+                    // Un-rotate the point for visualization.
+                    let inv_sin = -sin;
+                    let inv_cos = cos;
+                    let unrotated_x =
+                        (x - center.x) * inv_cos - (y - center.y) * inv_sin + center.x;
+                    let unrotated_y =
+                        (x - center.x) * inv_sin + (y - center.y) * inv_cos + center.y;
+                    let point = Vector::new(unrotated_x, unrotated_y);
+                    draw_point_small(
+                        &mut unrotated_space,
+                        &point,
+                        Scalar::new(145.0, 110.0, 69.0, 0.0),
+                    )?;
+
                     x += dx;
                 }
             }
@@ -145,7 +177,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             y += dy;
         }
 
-        imshow("Rotated Rectangle Test", &image)?;
+        imshow("Rotated Rectangle", &rotated_space)?;
+        imshow("Unrotated Rectangle", &unrotated_space)?;
         if wait_key(33)? > 1 {
             return Ok(());
         }
