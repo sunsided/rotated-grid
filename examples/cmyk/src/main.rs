@@ -1,4 +1,4 @@
-use opencv::core::{Mat, Point, Scalar, CV_8UC1};
+use opencv::core::{Mat, Point, Scalar, CV_8UC1, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
 use rotated_grid::{Angle, GridCoord, GridPositionIterator};
@@ -10,13 +10,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     const ANIMATE: bool = false;
 
     let grids = [
-        ("Cyan", 15.0),
-        ("Magenta", 75.0),
-        ("Yellow", 0.0),
-        ("Black", 45.0),
+        ("Cyan", 15.0, (255.0, 255.0, 178.0, 0.0)),
+        ("Magenta", 75.0, (255.0, 178.0, 255.0, 0.0)),
+        ("Yellow", 0.0, (178.0, 255.0, 255.0, 0.0)),
+        ("Key", 45.0, (178.0, 178.0, 178.0, 0.0)),
     ];
 
-    for (name, angle) in grids {
+    for (name, angle, color) in grids {
         let window_name = format!("{name} at {angle}°");
 
         let grid = GridPositionIterator::new(
@@ -33,13 +33,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut count = 0;
 
         let mut image =
-            Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC1, Scalar::default())?;
+            Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, Scalar::default())?;
         for GridCoord { x, y } in grid {
             count += 1;
 
             let center = Point::new(x as i32 + 20, y as i32 + 20);
             let radius = 1;
-            let color = Scalar::from(255.0);
+            let color = Scalar::from(color);
             circle(&mut image, center, radius, color, FILLED, LINE_AA, 0)?;
 
             imshow(&window_name, &image)?;
