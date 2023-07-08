@@ -103,7 +103,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Determine (half) the number and offset of rows in rotated space.
         let y_count_half = ((extent.y / dy) * 0.5).floor();
-        let mut y = center.y - y_count_half * dy + y0;
+        let start_y = center.y - (y_count_half * dy) + y0;
+        let mut y = ((tl.y - start_y) / dy).ceil() * dy + start_y;
+
         while y < bl.y {
             // Draw the rows.
             let x = tl.x;
