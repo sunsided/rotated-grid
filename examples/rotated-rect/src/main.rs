@@ -2,7 +2,7 @@ use opencv::core::{Mat, Point, Scalar, Scalar_, VecN, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, line, FILLED, LINE_AA};
 use opencv::prelude::*;
-use rotated_grid::{Angle, Line, LineSegment, OptimalIterator, OptimalXIterator, Vector};
+use rotated_grid::{Angle, Line, LineSegment, Vector};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -27,7 +27,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tr = Vector::new(490.0, 130.0);
     let bl = Vector::new(150.0, 350.0);
     let br = Vector::new(490.0, 350.0);
-
     let center = (tl + tr + bl + br) / 4.0;
 
     let rect_width = (tr - tl).norm();
@@ -58,9 +57,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let y0 = x0_ * offset_sin - y0_ * offset_cos;
         offset_rotation_angle += 0.1;
 
-        // Initialize the iterator up here to use original values.
-        let mut iter =
-            OptimalIterator::new(tl, tr, bl, br, Angle::from_degrees(angle), dx, dy, x0, y0);
+        let angle = Angle::from_degrees(angle as _);
+        let (sin, cos) = angle.sin_cos();
 
         // The center rectangle.
         draw_line(
@@ -76,9 +74,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             Scalar::new(19.0, 44.0, 255.0, 0.0),
         )?;
 
-        let angle = Angle::from_degrees(angle as _);
-        let (sin, cos) = angle.sin_cos();
-
         // Unrotated rectangle.
         unrotated_space.set(bg_color)?;
         draw_rectangle(&mut unrotated_space, &tl, &tr, &bl, &br, Scalar::default())?;
@@ -90,6 +85,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         let bl = bl.rotate_around(&center, angle);
         let br = br.rotate_around(&center, angle);
         draw_rectangle(&mut rotated_space, &tl, &tr, &bl, &br, Scalar::default())?;
+
+        // Determine line segments describing the rotated rectangle.
+        let rect_top = LineSegment::from_points(tr, &tl);
+        let rect_left = LineSegment::from_points(tl, &bl);
+        let rect_bottom = LineSegment::from_points(bl, &br);
+        let rect_right = LineSegment::from_points(tr, &br);
 
         // Draw the Axis-Aligned Bounding Box that wraps the rotated rectangle.
         let extent = Vector::new(
@@ -109,20 +110,71 @@ fn main() -> Result<(), Box<dyn Error>> {
             Scalar::new(128.0, 128.0, 128.0, 0.0),
         )?;
 
-        while let Some((point, grid_coord)) = iter.next() {
-            // Draw point in rotated space.
-            draw_point_small(
-                &mut rotated_space,
-                &point,
-                Scalar::new(145.0, 110.0, 69.0, 0.0),
-            )?;
+        // Determine (half) the number and offset of rows in rotated space.
+        let y_count_half = ((extent.y / dy) * 0.5).floor();
+        let start_y = center.y - (y_count_half * dy) + y0;
+        let mut y = ((tl.y - start_y) / dy).ceil() * dy + start_y;
 
-            // Draw point in unrotated space.
-            draw_point_small(
-                &mut unrotated_space,
-                &Vector::new(grid_coord.x, grid_coord.y),
-                Scalar::new(145.0, 110.0, 69.0, 0.0),
-            )?;
+        while y < bl.y {
+            // Draw the rows.
+            let x = tl.x;
+            let row_start = Vector::new(x, y);
+            let row_end = Vector::new(x + extent.x, y);
+
+            // Determine the intersection of the ray from the given row with the rectangle.
+            let ray = Line::from_points(row_start, &row_end);
+            if let Some((start, end)) = find_intersections(
+                &ray,
+                &rect_top,
+                &rect_left,
+                &rect_bottom,
+                &rect_right,
+                extent.x,
+                extent.y,
+            ) {
+                draw_point(
+                    &mut rotated_space,
+                    &start,
+                    Scalar::new(255.0, 0.0, 255.0, 0.0),
+                )?;
+                draw_line_with_dot(
+                    &mut rotated_space,
+                    &start,
+                    &end,
+                    Scalar::new(255.0, 0.0, 255.0, 0.0),
+                )?;
+
+                // Determine (half) the number and offset of columns in rotated space, along the row.
+                let x_count_half = ((extent.x / dx) * 0.5).floor();
+                let start_x = center.x - (x_count_half * dx) + x0;
+                let mut x = ((start.x - start_x) / dx).ceil() * dx + start_x;
+                while x < end.x {
+                    let point = Vector::new(x, y);
+                    draw_point_small(
+                        &mut rotated_space,
+                        &point,
+                        Scalar::new(145.0, 110.0, 69.0, 0.0),
+                    )?;
+
+                    // Un-rotate the point for visualization.
+                    let inv_sin = -sin;
+                    let inv_cos = cos;
+                    let unrotated_x =
+                        (x - center.x) * inv_cos - (y - center.y) * inv_sin + center.x;
+                    let unrotated_y =
+                        (x - center.x) * inv_sin + (y - center.y) * inv_cos + center.y;
+                    let point = Vector::new(unrotated_x, unrotated_y);
+                    draw_point_small(
+                        &mut unrotated_space,
+                        &point,
+                        Scalar::new(145.0, 110.0, 69.0, 0.0),
+                    )?;
+
+                    x += dx;
+                }
+            }
+
+            y += dy;
         }
 
         imshow("Rotated Rectangle", &rotated_space)?;
