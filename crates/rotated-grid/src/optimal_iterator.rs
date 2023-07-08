@@ -5,16 +5,12 @@ use crate::{Angle, Line, LineSegment, Vector};
 /// axis-aligned rectangle are produced.
 pub struct OptimalIterator {
     y: f64,
-    tl: Vector,
-    tr: Vector,
-    bl: Vector,
-    br: Vector,
+    min_x: f64,
+    max_y: f64,
     center: Vector,
     extent: Vector,
     delta: Vector,
     offset: Vector,
-    rect_width: f64, // TODO: Summarize into vector
-    rect_height: f64,
     /// The line segment describing the top edge of the rotated rectangle.
     rect_top: LineSegment,
     /// The line segment describing the left edge of the rotated rectangle.
@@ -23,8 +19,6 @@ pub struct OptimalIterator {
     rect_bottom: LineSegment,
     /// The line segment describing the right edge of the rotated rectangle.
     rect_right: LineSegment,
-    sin: f64,
-    cos: f64,
     x_iter: Option<OptimalXIterator>,
 }
 
@@ -68,8 +62,6 @@ impl OptimalIterator {
         );
         let tl = center - extent * 0.5;
         let br = center + extent * 0.5;
-        let tr = Vector::new(br.x, tl.y);
-        let bl = Vector::new(tl.x, br.y);
 
         // Determine (half) the number and offset of rows in rotated space.
         let y_count_half = ((extent.y / dy) * 0.5).floor();
@@ -78,22 +70,16 @@ impl OptimalIterator {
 
         Self {
             y,
-            tl,
-            tr,
-            bl,
-            br,
+            min_x: tl.x,
+            max_y: br.y,
             center,
             extent,
             delta: Vector::new(dx, dy),
             offset: Vector::new(x0, y0),
-            rect_width,
-            rect_height,
             rect_top,
             rect_left,
             rect_bottom,
             rect_right,
-            sin,
-            cos,
             x_iter: None,
         }
     }
@@ -148,7 +134,7 @@ impl Iterator for OptimalIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if self.y > self.bl.y {
+            if self.y > self.max_y {
                 return None;
             }
 
@@ -161,7 +147,7 @@ impl Iterator for OptimalIterator {
             }
 
             // Obtain the rows.
-            let x = self.tl.x;
+            let x = self.min_x;
             let row_start = Vector::new(x, self.y);
             let row_end = Vector::new(x + self.extent.x, self.y);
 
@@ -169,7 +155,6 @@ impl Iterator for OptimalIterator {
             let ray = Line::from_points(row_start, &row_end);
             if let Some((start, end)) = self.find_intersections(&ray) {
                 self.x_iter = Some(OptimalXIterator::new(
-                    self.y,
                     self.center,
                     self.extent,
                     start,
@@ -185,14 +170,12 @@ impl Iterator for OptimalIterator {
 /// Iterator for x coordinates along a ray
 pub struct OptimalXIterator {
     x: f64,
-    y: f64,
     dx: f64,
     row_end: f64,
 }
 
 impl OptimalXIterator {
     pub fn new(
-        y: f64,
         center: Vector,
         extent: Vector,
         row_start: Vector,
@@ -209,7 +192,6 @@ impl OptimalXIterator {
 
         Self {
             x,
-            y,
             dx,
             row_end: row_end.x,
         }

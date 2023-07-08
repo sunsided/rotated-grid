@@ -1,4 +1,4 @@
-use opencv::core::{add, divide, no_array, subtract, Mat, Point, Scalar, CV_32FC3, CV_8UC3};
+use opencv::core::{Mat, Point, Scalar, CV_32FC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
 use rotated_grid::{Angle, GridCoord, GridPositionIterator};
@@ -7,10 +7,6 @@ use std::error::Error;
 fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
     const HEIGHT: usize = 440;
-
-    // A faux CMYK mix.
-    let mut mix =
-        Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, Scalar::default())?;
 
     let grids = [
         ("Cyan", 15.0, (255.0, 255.0, 178.0, 0.0)),
@@ -46,21 +42,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             circle(&mut image, center, radius, color, FILLED, LINE_AA, 0)?;
         }
 
-        let mut out = Mat::default();
-        if name != "Key" {
-            add(&mix, &image, &mut out, &no_array(), CV_32FC3)?;
-        } else {
-            subtract(&mix, &image, &mut out, &no_array(), CV_32FC3)?;
-        }
-        mix = out;
-
         imshow(&window_name, &image)?;
         println!("{window_name}: Expected count: {expected_count:?}, actual count: {count}");
     }
-
-    let mut out = Mat::default();
-    divide(0.25, &mix, &mut out, CV_32FC3)?;
-    imshow("Mix", &out)?;
 
     wait_key(0)?;
     Ok(())
