@@ -4,15 +4,18 @@ use crate::Line;
 /// A line segment determined by a ray starting at a point of origin with a specified length and direction.
 pub struct LineSegment {
     /// The origin point of the line segment.
-    origin: Vector,
+    pub(crate) start: Vector,
     /// The length and direction vector of the line segment.
-    length: Vector,
+    pub(crate) end: Vector,
 }
 
 impl LineSegment {
     /// Constructs a line from an origin point and a direction.
     pub fn new(origin: Vector, length: Vector) -> Self {
-        Self { origin, length }
+        Self {
+            start: origin,
+            end: length,
+        }
     }
 
     /// Constructs a line through two points.
@@ -22,14 +25,18 @@ impl LineSegment {
 
     /// Gets a normalized length version of the line.
     pub fn normalized(&self) -> Line {
-        Line::new(self.origin, self.length)
+        Line::new(self.start, self.end)
     }
 
-    pub const fn origin(&self) -> &Vector {
-        &self.origin
+    pub fn direction(&self) -> Vector {
+        (self.end - self.start).normalized()
     }
 
-    pub const fn length(&self) -> &Vector {
-        &self.length
+    pub const fn start(&self) -> &Vector {
+        &self.start
+    }
+
+    pub const fn end(&self) -> &Vector {
+        &self.end
     }
 }

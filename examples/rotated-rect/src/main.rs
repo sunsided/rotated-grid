@@ -27,6 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rect_height = (bl - tl).norm();
     let extent = Vector::new(rect_width, rect_height);
 
+    // Note that the calculations are defined for the rotation angles of 0..90 degrees!
     let mut angle = 0.0;
     let mut increment = 0.3;
     loop {
@@ -64,6 +65,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         let br = br.rotate_around(&center, angle);
         draw_rectangle(&mut image, &tl, &tr, &bl, &br, Scalar::default())?;
 
+        // Determine line segments describing the rotated rectangle.
+        let rect_top = LineSegment::from_points(tr, &tl);
+        let rect_left = LineSegment::from_points(tl, &bl);
+        let rect_bottom = LineSegment::from_points(bl, &br);
+        let rect_right = LineSegment::from_points(tr, &br);
+
         // Draw the Axis-Aligned Bounding Box that wraps the rotated rectangle.
         let extent = Vector::new(
             extent.x * cos + extent.y * sin,
@@ -90,7 +97,41 @@ fn main() -> Result<(), Box<dyn Error>> {
             // Draw the rows.
             let start = Vector::new(x, y);
             let end = Vector::new(x + extent.x, y);
-            draw_line(&mut image, &start, &end, Scalar::new(85.0, 60.0, 19.0, 0.0))?;
+            draw_line(
+                &mut image,
+                &start,
+                &end,
+                Scalar::new(145.0, 110.0, 69.0, 0.0),
+            )?;
+
+            // Determine the intersection of the ray from the given row with the rectangle.
+            let ray = Line::from_points(start, &end);
+            let segment = &rect_left;
+
+            draw_point(&mut image, &ray.origin(), Scalar::new(0.0, 255.0, 0.0, 0.0))?;
+            draw_point(
+                &mut image,
+                &(*ray.origin() + *ray.direction() * extent.x),
+                Scalar::new(0.0, 255.0, 0.0, 0.0),
+            )?;
+
+            if let Some((start, end)) = find_intersections(
+                &ray,
+                &rect_top,
+                &rect_left,
+                &rect_bottom,
+                &rect_right,
+                extent.x,
+                extent.y,
+            ) {
+                draw_point(&mut image, &start, Scalar::new(255.0, 0.0, 255.0, 0.0))?;
+                draw_line_with_dot(
+                    &mut image,
+                    &start,
+                    &end,
+                    Scalar::new(255.0, 0.0, 255.0, 0.0),
+                )?;
+            }
 
             y += dy;
         }
@@ -187,6 +228,50 @@ fn render_outside_part(
         )?;
     }
     Ok(())
+}
+
+/// Finds the intersection point that is furthest from the specified line's origin,
+/// assuming the line's origin already is an intersection point.
+fn find_intersections(
+    ray: &Line,
+    top: &LineSegment,
+    left: &LineSegment,
+    bottom: &LineSegment,
+    right: &LineSegment,
+    width: f64,
+    height: f64,
+) -> Option<(Vector, Vector)> {
+    let mut min = f64::INFINITY;
+    let mut max = f64::NEG_INFINITY;
+
+    if let Some(t) = ray.calculate_intersection_t(&top.normalized(), width) {
+        min = min.min(t);
+        max = max.max(t);
+    }
+
+    if let Some(t) = ray.calculate_intersection_t(&bottom.normalized(), width) {
+        min = min.min(t);
+        max = max.max(t);
+    }
+
+    if let Some(t) = ray.calculate_intersection_t(&left.normalized(), height) {
+        min = min.min(t);
+        max = max.max(t);
+    }
+
+    if let Some(t) = ray.calculate_intersection_t(&right.normalized(), height) {
+        min = min.min(t);
+        max = max.max(t);
+    }
+
+    if min.is_finite() && max.is_finite() {
+        Some((
+            *ray.origin() + *ray.direction() * min,
+            *ray.origin() + *ray.direction() * max,
+        ))
+    } else {
+        None
+    }
 }
 
 /// Finds the intersection point that is furthest from the specified line's origin,
