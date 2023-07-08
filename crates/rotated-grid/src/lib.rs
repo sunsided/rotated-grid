@@ -54,6 +54,7 @@ mod angle;
 mod grid_coord;
 mod line;
 mod line_segment;
+mod optimal_iterator;
 mod vector;
 
 pub use angle::Angle;
@@ -61,6 +62,9 @@ pub use grid_coord::GridCoord;
 pub use line::Line;
 pub use line_segment::LineSegment;
 pub use vector::Vector;
+
+// TODO: remove from public API
+pub use optimal_iterator::{OptimalIterator, OptimalXIterator};
 
 /// An iterator for positions on a rotated grid.
 pub struct GridPositionIterator {
