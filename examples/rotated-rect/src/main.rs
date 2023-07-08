@@ -9,28 +9,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
 
-    let dx = 10.0;
-    let dy = 20.0;
-
     let bg_color = Scalar::from((255.0, 255.0, 255.0, 0.0));
 
     let mut image = Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, bg_color)?;
 
-    let tl = Vector::new(100.0, 100.0);
-    let tr = Vector::new(540.0, 100.0);
-    let bl = Vector::new(100.0, 380.0);
-    let br = Vector::new(540.0, 380.0);
+    // Form the regular rectangle.
+    let tl = Vector::new(150.0, 130.0);
+    let tr = Vector::new(490.0, 130.0);
+    let bl = Vector::new(150.0, 350.0);
+    let br = Vector::new(490.0, 350.0);
     let center = (tl + tr + bl + br) / 4.0;
 
-    let world_top = Vector::new(0.0, 100.0) + center;
-
-    let rect_top = LineSegment::from_points(tr, &tl);
-    let rect_left = LineSegment::from_points(tl, &bl);
-    let rect_bottom = LineSegment::from_points(bl, &br);
-    let rect_right = LineSegment::from_points(br, &tr);
+    let rect_width = (tr - tl).norm();
+    let rect_height = (bl - tl).norm();
+    let extent = Vector::new(rect_width, rect_height);
 
     let mut angle = 0.0;
-    let mut increment = 0.1;
+    let mut increment = 0.3;
     loop {
         angle += increment;
         if angle >= 90.0 {
@@ -41,102 +36,36 @@ fn main() -> Result<(), Box<dyn Error>> {
             angle = 0.0;
         }
 
-        let angle = Angle::from_degrees(-angle as _);
+        let angle = Angle::from_degrees(angle as _);
+        let (sin, cos) = angle.sin_cos();
         image.set(bg_color)?;
 
-        draw_rectangle(&mut image, &tl, &tr, &bl, &br)?;
+        // The rotated rectangle.
+        let tl = tl.rotate_around(&center, angle);
+        let tr = tr.rotate_around(&center, angle);
+        let bl = bl.rotate_around(&center, angle);
+        let br = br.rotate_around(&center, angle);
+        draw_rectangle(&mut image, &tl, &tr, &bl, &br, Scalar::default())?;
 
-        // Form a ray from the center along the "up" direction.
-        let top = world_top.rotate_around(&center, angle);
-        let up_ray = Line::from_points(center, &top);
-
-        // Calculate the orthogonal direction
-        let left_dir = up_ray.direction().orthogonal();
-
-        // Calculate the point at which the upwards ray intersects with the rectangle,
-        // as well as the length of that ray.
-        let top_intersect =
-            intersect_with_rectangle(&up_ray, &rect_top, &rect_left, &rect_bottom, &rect_right);
-        let length_inside_sq = (top_intersect - center).norm_sq();
-
-        // Determine the line that
-        let orthogonal = Line::new(top_intersect, left_dir);
-        let opposite_top_intersect = find_other_intersection(
-            &orthogonal,
-            &rect_top,
-            &rect_left,
-            &rect_bottom,
-            &rect_right,
-        )
-        .or_else(|| {
-            find_other_intersection(
-                &-orthogonal,
-                &rect_top,
-                &rect_left,
-                &rect_bottom,
-                &rect_right,
-            )
-        });
-
-        render_outside_part(&mut image, &tl, &up_ray, &top_intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &tr, &up_ray, &top_intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &bl, &up_ray, &top_intersect, length_inside_sq)?;
-        render_outside_part(&mut image, &br, &up_ray, &top_intersect, length_inside_sq)?;
-
-        let orthogonal_base = Line::new(center, left_dir);
-        let base_intersect = find_other_intersection(
-            &orthogonal_base,
-            &rect_top,
-            &rect_left,
-            &rect_bottom,
-            &rect_right,
-        )
-        .expect("expect a line to one side");
-        let opposite_base_intersect = find_other_intersection(
-            &-orthogonal_base,
-            &rect_top,
-            &rect_left,
-            &rect_bottom,
-            &rect_right,
-        )
-        .expect("expect a line to one side");
-
-        draw_point(&mut image, &center, Scalar::from((0.0, 255.0, 0.0, 0.0)))?;
-
-        draw_line_with_dot(&mut image, &center, &top_intersect, Scalar::default())?;
-        if let Some(other) = opposite_top_intersect {
-            draw_line_with_dot(
-                &mut image,
-                &top_intersect,
-                &other,
-                Scalar::from((255.0, 0.0, 0.0, 0.0)),
-            )?;
-        }
-
-        // Draw the line through the center.
-        draw_line_with_dot(
+        // Draw the Axis-Aligned Bounding Box that wraps the rotated rectangle.
+        let extent = Vector::new(
+            extent.x * cos + extent.y * sin,
+            extent.x * sin + extent.y * cos,
+        );
+        let tl = (center - extent * 0.5);
+        let br = (center + extent * 0.5);
+        let tr = Vector::new(br.x, tl.y);
+        let bl = Vector::new(tl.x, br.y);
+        draw_rectangle(
             &mut image,
-            &center,
-            &base_intersect,
-            Scalar::from((0.0, 255.0, 0.0, 0.0)),
-        )?;
-        draw_line_with_dot(
-            &mut image,
-            &center,
-            &opposite_base_intersect,
-            Scalar::from((0.0, 255.0, 0.0, 0.0)),
+            &tl,
+            &tr,
+            &bl,
+            &br,
+            Scalar::new(128.0, 128.0, 128.0, 0.0),
         )?;
 
-        // Walk alongside the top direction in dx steps and create orthogonal lines.
-        let mut t = 0.0;
-        // let length = center
-        /*
-        while t {
-
-        }
-         */
-
-        imshow("Lines", &image)?;
+        imshow("Rotated Rectangle Test", &image)?;
         if wait_key(33)? > 1 {
             return Ok(());
         }
@@ -315,13 +244,14 @@ fn draw_rectangle(
     tr: &Vector,
     bl: &Vector,
     br: &Vector,
+    color: Scalar,
 ) -> Result<(), Box<dyn Error>> {
     // top side
     line(
         &mut image,
         vec2point(&tl),
         vec2point(&tr),
-        Scalar::default(),
+        color,
         1,
         LINE_AA,
         0,
@@ -332,7 +262,7 @@ fn draw_rectangle(
         &mut image,
         vec2point(&tl),
         vec2point(&bl),
-        Scalar::default(),
+        color,
         1,
         LINE_AA,
         0,
@@ -343,7 +273,7 @@ fn draw_rectangle(
         &mut image,
         vec2point(&bl),
         vec2point(&br),
-        Scalar::default(),
+        color,
         1,
         LINE_AA,
         0,
@@ -354,7 +284,7 @@ fn draw_rectangle(
         &mut image,
         vec2point(&br),
         vec2point(&tr),
-        Scalar::default(),
+        color,
         1,
         LINE_AA,
         0,
