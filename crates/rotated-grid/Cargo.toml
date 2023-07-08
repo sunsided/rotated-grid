@@ -1,7 +1,7 @@
 [package]
 name = "rotated-grid"
 description = "Rotated grid calculations for CMYK halftone dithering and more"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 keywords = ["halftone", "image-processing", "grid"]
 categories = ["multimedia::images", "mathematics"]
