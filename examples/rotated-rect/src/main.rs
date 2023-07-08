@@ -12,6 +12,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let dx = 10.0;
     let dy = 20.0;
 
+    let x0_ = 5.0;
+    let y0_ = 5.0;
+
     let bg_color = Scalar::from((255.0, 255.0, 255.0, 0.0));
 
     let mut image = Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, bg_color)?;
@@ -32,6 +35,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut increment = 0.3;
     let min_angle = 0.0; // TODO: Allow for negative angles (e.g. -90).
     let max_angle = 90.0;
+
+    let mut rotate_angle = 0.0f64;
     loop {
         angle += increment;
         if angle >= max_angle {
@@ -41,6 +46,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             increment *= -1.0;
             angle = min_angle;
         }
+
+        let (s, c) = rotate_angle.sin_cos();
+        let x0 = x0_ * c + y0_ * s;
+        let y0 = x0_ * s - y0_ * c;
+        rotate_angle += 0.1;
 
         let angle = Angle::from_degrees(angle as _);
         let (sin, cos) = angle.sin_cos();
@@ -93,7 +103,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Determine (half) the number and offset of rows in rotated space.
         let y_count_half = ((extent.y / dy) * 0.5).floor();
-        let mut y = center.y - y_count_half * dy;
+        let mut y = center.y - y_count_half * dy + y0;
         while y < bl.y {
             // Draw the rows.
             let x = tl.x;
@@ -121,8 +131,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 // Determine (half) the number and offset of columns in rotated space, along the row.
                 let x_count_half = ((extent.x / dx) * 0.5).floor();
-                let x0 = center.x - (x_count_half * dx);
-                let mut x = ((start.x - x0) / dx).ceil() * dx + x0;
+                let start_x = center.x - (x_count_half * dx) + x0;
+                let mut x = ((start.x - start_x) / dx).ceil() * dx + start_x;
                 while x < end.x {
                     let point = Vector::new(x, y);
                     draw_point_small(&mut image, &point, Scalar::new(145.0, 110.0, 69.0, 0.0))?;
