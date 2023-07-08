@@ -15,13 +15,13 @@ pub struct OptimalIterator {
     delta: Vector,
     offset: Vector,
     /// The line segment describing the top edge of the rotated rectangle.
-    rect_top: LineSegment,
+    rect_top: Line,
     /// The line segment describing the left edge of the rotated rectangle.
-    rect_left: LineSegment,
+    rect_left: Line,
     /// The line segment describing the bottom edge of the rotated rectangle.
-    rect_bottom: LineSegment,
+    rect_bottom: Line,
     /// The line segment describing the right edge of the rotated rectangle.
-    rect_right: LineSegment,
+    rect_right: Line,
     x_iter: Option<OptimalXIterator>,
 }
 
@@ -53,10 +53,10 @@ impl OptimalIterator {
         let br = br.rotate_around_with(&center, sin, cos);
 
         // Determine line segments describing the rotated rectangle.
-        let rect_top = LineSegment::from_points(tr, &tl);
-        let rect_left = LineSegment::from_points(tl, &bl);
-        let rect_bottom = LineSegment::from_points(bl, &br);
-        let rect_right = LineSegment::from_points(tr, &br);
+        let rect_top = Line::from_points(tr, &tl);
+        let rect_left = Line::from_points(tl, &bl);
+        let rect_bottom = Line::from_points(bl, &br);
+        let rect_right = Line::from_points(tr, &br);
 
         // Obtain the Axis-Aligned Bounding Box that wraps the rotated rectangle.
         let extent = Vector::new(
@@ -102,22 +102,22 @@ impl OptimalIterator {
         let width = self.extent.x;
         let height = self.extent.y;
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_top.normalized(), width) {
+        if let Some(t) = ray.calculate_intersection_t(&self.rect_top, width) {
             min = min.min(t);
             max = max.max(t);
         }
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_bottom.normalized(), width) {
+        if let Some(t) = ray.calculate_intersection_t(&self.rect_bottom, width) {
             min = min.min(t);
             max = max.max(t);
         }
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_left.normalized(), height) {
+        if let Some(t) = ray.calculate_intersection_t(&self.rect_left, height) {
             min = min.min(t);
             max = max.max(t);
         }
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_right.normalized(), height) {
+        if let Some(t) = ray.calculate_intersection_t(&self.rect_right, height) {
             min = min.min(t);
             max = max.max(t);
         }
