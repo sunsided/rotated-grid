@@ -152,3 +152,34 @@ impl Iterator for GridPositionIterator {
         (0, Some(self.estimate_max_grid_points()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test() {
+        const WIDTH: f64 = 10240.0;
+        const HEIGHT: f64 = 128.0;
+        const ANGLE: f64 = 45.0;
+
+        for _ in 0..1000 {
+            let grid = GridPositionIterator::new(
+                WIDTH as _,
+                HEIGHT as _,
+                7.0,
+                7.0,
+                0.0,
+                0.0,
+                Angle::<f64>::from_degrees(ANGLE),
+            );
+
+            let mut count = 0;
+            for _ in grid.into_iter() {
+                count += 1;
+            }
+
+            assert!(count > 0);
+        }
+    }
+}

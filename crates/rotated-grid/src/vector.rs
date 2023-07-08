@@ -9,6 +9,7 @@ pub struct Vector {
 
 impl Vector {
     /// Constructs a new vector from the specified coordinates.
+    #[inline(always)]
     pub const fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
@@ -24,16 +25,19 @@ impl Vector {
     }
 
     /// Calculates the squared euclidean norm of the vector.
+    #[inline(always)]
     pub fn norm_sq(&self) -> f64 {
         self.x * self.x + self.y * self.y
     }
 
     /// Calculates the euclidean norm of the vector.
+    #[inline(always)]
     pub fn norm(&self) -> f64 {
         self.norm_sq().sqrt()
     }
 
     /// Calculates the euclidean norm of the vector.
+    #[inline(always)]
     pub fn normalized(&self) -> Self {
         *self / self.norm()
     }

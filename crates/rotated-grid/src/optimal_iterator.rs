@@ -44,10 +44,10 @@ impl OptimalIterator {
         let center = (tl + tr + bl + br) * 0.25;
 
         // Calculate the rotated rectangle.
-        let tl = tl.rotate_around(&center, angle);
-        let tr = tr.rotate_around(&center, angle);
-        let bl = bl.rotate_around(&center, angle);
-        let br = br.rotate_around(&center, angle);
+        let tl = tl.rotate_around_with(&center, sin, cos);
+        let tr = tr.rotate_around_with(&center, sin, cos);
+        let bl = bl.rotate_around_with(&center, sin, cos);
+        let br = br.rotate_around_with(&center, sin, cos);
 
         // Determine line segments describing the rotated rectangle.
         let rect_top = LineSegment::from_points(tr, &tl);
@@ -85,7 +85,8 @@ impl OptimalIterator {
     }
 
     /// Returns the center of the rectangle.
-    pub fn center(&self) -> &Vector {
+    #[inline(always)]
+    pub const fn center(&self) -> &Vector {
         &self.center
     }
 

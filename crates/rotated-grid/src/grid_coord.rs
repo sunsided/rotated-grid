@@ -11,11 +11,13 @@ pub struct GridCoord {
 
 impl GridCoord {
     /// Creates a new grid coordinate.
+    #[inline(always)]
     pub const fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
 
     /// Converts this [`GridCoord`] into a tuple of X and Y coordinates, in that order.
+    #[inline(always)]
     pub const fn into_xy(self) -> (f64, f64) {
         (self.x, self.y)
     }

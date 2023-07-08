@@ -21,6 +21,7 @@ impl Line {
     }
 
     /// Constructs a line through two points.
+    #[inline(always)]
     pub fn from_points(a: Vector, b: &Vector) -> Self {
         Self::new(a, *b - a)
     }
