@@ -1,4 +1,7 @@
-use crate::{Angle, Line, LineSegment, Vector};
+use crate::inner::line::Line;
+use crate::inner::line_segment::LineSegment;
+use crate::inner::vector::Vector;
+use crate::Angle;
 
 /// An iterator for grid coordinates in rotated rectangle space.
 /// Only coordinates that are guaranteed to lie within the original

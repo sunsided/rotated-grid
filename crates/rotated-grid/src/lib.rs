@@ -52,18 +52,13 @@
 
 mod angle;
 mod grid_coord;
-mod line;
-mod line_segment;
-mod optimal_iterator;
-mod vector;
+pub mod inner;
 
 use crate::angle::AngleOps;
-use crate::optimal_iterator::OptimalIterator;
+use crate::inner::vector::Vector;
 pub use angle::Angle;
 pub use grid_coord::GridCoord;
-pub use line::Line;
-pub use line_segment::LineSegment;
-pub use vector::Vector;
+pub use inner::optimal_iterator::OptimalIterator;
 
 /// An iterator for positions on a rotated grid.
 pub struct GridPositionIterator {

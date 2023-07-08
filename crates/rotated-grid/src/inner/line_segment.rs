@@ -1,5 +1,7 @@
-use crate::vector::Vector;
-use crate::Line;
+//! Contains the [`LineSegment`] type.
+
+use crate::inner::line::Line;
+use crate::inner::vector::Vector;
 
 /// A line segment determined by a ray starting at a point of origin with a specified length and direction.
 pub struct LineSegment {

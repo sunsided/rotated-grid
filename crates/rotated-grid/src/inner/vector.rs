@@ -1,3 +1,5 @@
+//! Contains the [`Vector`] type.
+
 use crate::Angle;
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 

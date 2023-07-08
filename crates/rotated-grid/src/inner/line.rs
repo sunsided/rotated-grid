@@ -1,5 +1,7 @@
-use crate::vector::Vector;
-use crate::LineSegment;
+//! Contains the [`Line`] type.
+
+use crate::inner::line_segment::LineSegment;
+use crate::inner::vector::Vector;
 use std::ops::{Mul, Neg};
 
 /// A line determined by a ray starting at a point of origin.

@@ -2,7 +2,9 @@ use opencv::core::{Mat, Point, Scalar, Scalar_, VecN, CV_8UC3};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, line, FILLED, LINE_AA};
 use opencv::prelude::*;
-use rotated_grid::{Angle, Line, LineSegment, Vector};
+use rotated_grid::{
+    inner::line::Line, inner::line_segment::LineSegment, inner::vector::Vector, Angle,
+};
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
