@@ -10,8 +10,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     const ANIMATE: bool = false;
 
     let grids = [
-        ("Test", 45.0),
-        //
         ("Cyan", 15.0),
         ("Magenta", 75.0),
         ("Yellow", 0.0),
