@@ -81,7 +81,7 @@ impl GridPositionIterator {
     /// * `dy` - The spacing of grid elements along the (rotated) Y axis.
     /// * `x0` - The X offset of the first grid element.
     /// * `x1` - The Y offset of the first grid element.
-    /// * `alpha` - The orientation of the grid.
+    /// * `alpha` - The orientation of the grid. Must be in range 0..90°.
     pub fn new(
         width: f64,
         height: f64,
@@ -91,6 +91,8 @@ impl GridPositionIterator {
         y0: f64,
         alpha: Angle<f64>,
     ) -> Self {
+        assert!(alpha.into_radians() >= 0.0);
+        assert!(alpha.into_radians() <= std::f64::consts::FRAC_PI_2);
         assert!(width > 0.0);
         assert!(height > 0.0);
 
