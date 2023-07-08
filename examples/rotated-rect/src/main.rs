@@ -106,15 +106,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             // Determine the intersection of the ray from the given row with the rectangle.
             let ray = Line::from_points(start, &end);
-            let segment = &rect_left;
-
-            draw_point(&mut image, &ray.origin(), Scalar::new(0.0, 255.0, 0.0, 0.0))?;
-            draw_point(
-                &mut image,
-                &(*ray.origin() + *ray.direction() * extent.x),
-                Scalar::new(0.0, 255.0, 0.0, 0.0),
-            )?;
-
             if let Some((start, end)) = find_intersections(
                 &ray,
                 &rect_top,
