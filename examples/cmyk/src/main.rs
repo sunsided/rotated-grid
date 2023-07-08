@@ -1,4 +1,6 @@
-use opencv::core::{Mat, Point, Scalar, CV_8UC1, CV_8UC3};
+use opencv::core::{
+    add, add_weighted, divide, no_array, subtract, Mat, Point, Scalar, CV_32FC3, CV_8UC1, CV_8UC3,
+};
 use opencv::highgui::{imshow, wait_key};
 use opencv::imgproc::{circle, FILLED, LINE_AA};
 use rotated_grid::{Angle, GridCoord, GridPositionIterator};
@@ -8,6 +10,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
     const HEIGHT: usize = 440;
     const ANIMATE: bool = false;
+
+    // A faux CMYK mix.
+    let mut mix =
+        Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, Scalar::default())?;
 
     let grids = [
         ("Cyan", 15.0, (255.0, 255.0, 178.0, 0.0)),
@@ -33,26 +39,31 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut count = 0;
 
         let mut image =
-            Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, Scalar::default())?;
+            Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_32FC3, Scalar::default())?;
         for GridCoord { x, y } in grid {
             count += 1;
 
             let center = Point::new(x as i32 + 20, y as i32 + 20);
             let radius = 1;
-            let color = Scalar::from(color);
+            let color = Scalar::from(color) / 255.0;
             circle(&mut image, center, radius, color, FILLED, LINE_AA, 0)?;
-
-            imshow(&window_name, &image)?;
-
-            if ANIMATE {
-                if wait_key(1)? > 0 {
-                    return Ok(());
-                }
-            }
         }
 
+        let mut out = Mat::default();
+        if name != "Key" {
+            add(&mix, &image, &mut out, &no_array(), CV_32FC3)?;
+        } else {
+            subtract(&mix, &image, &mut out, &no_array(), CV_32FC3)?;
+        }
+        mix = out;
+
+        imshow(&window_name, &image)?;
         println!("{window_name}: Expected count: {expected_count:?}, actual count: {count}");
     }
+
+    let mut out = Mat::default();
+    divide(0.25, &mix, &mut out, CV_32FC3)?;
+    imshow("Mix", &out)?;
 
     wait_key(0)?;
     Ok(())
