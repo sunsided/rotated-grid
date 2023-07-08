@@ -8,7 +8,7 @@ pub struct LineSegment {
     /// The origin point of the line segment.
     pub(crate) start: Vector,
     /// The length and direction vector of the line segment.
-    pub(crate) end: Vector,
+    pub(crate) direction: Vector,
 }
 
 impl LineSegment {
@@ -16,29 +16,33 @@ impl LineSegment {
     pub fn new(origin: Vector, length: Vector) -> Self {
         Self {
             start: origin,
-            end: length,
+            direction: length,
         }
     }
 
     /// Constructs a line through two points.
+    #[inline(always)]
     pub fn from_points(a: Vector, b: &Vector) -> Self {
         Self::new(a, *b - a)
     }
 
     /// Gets a normalized length version of the line.
+    #[inline(always)]
     pub fn normalized(&self) -> Line {
-        Line::new(self.start, self.end)
+        Line::new(self.start, self.direction)
     }
 
-    pub fn direction(&self) -> Vector {
-        (self.end - self.start).normalized()
+    pub fn direction_normalized(&self) -> Vector {
+        (self.direction - self.start).normalized()
     }
 
+    #[inline(always)]
     pub const fn start(&self) -> &Vector {
         &self.start
     }
 
-    pub const fn end(&self) -> &Vector {
-        &self.end
+    #[inline(always)]
+    pub const fn direction(&self) -> &Vector {
+        &self.direction
     }
 }

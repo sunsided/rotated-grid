@@ -91,22 +91,6 @@ impl Vector {
         }
     }
 
-    /// Rotates the vector counterclockwise by the specified angle.
-    pub fn rotate_around_screenspace(&self, pivot: &Self, angle: Angle) -> Self {
-        let (sin, cos) = angle.sin_cos();
-
-        let x0 = self.x - pivot.x;
-        let y0 = self.y - pivot.y;
-
-        let x = x0 * cos + y0 * sin;
-        let y = -x0 * sin + y0 * cos;
-
-        Self {
-            x: x + pivot.x,
-            y: y + pivot.y,
-        }
-    }
-
     /// Provides a vector orthogonal to the specified one by rotating the vector
     /// 90° counterclockwise.
     pub fn orthogonal(&self) -> Self {
@@ -117,12 +101,25 @@ impl Vector {
     }
 
     /// Calculates the dot product of two vectors.
+    #[inline(always)]
     pub fn dot(&self, other: &Self) -> f64 {
         self.x * other.x + self.y * other.y
     }
 
+    /// Calculates the 2D cross product of two vectors.
+    #[inline(always)]
     pub fn cross(&self, other: &Vector) -> f64 {
         self.x * other.y - self.y * other.x
+    }
+
+    /// Projects a vector at a given distance alongside a direction
+    /// from the current origin.
+    #[inline(always)]
+    pub fn project_out(&self, direction: &Vector, t: f64) -> Self {
+        Self {
+            x: self.x + direction.x * t,
+            y: self.y + direction.y * t,
+        }
     }
 }
 

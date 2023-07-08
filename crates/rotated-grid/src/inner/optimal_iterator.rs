@@ -1,5 +1,4 @@
 use crate::inner::line::Line;
-use crate::inner::line_segment::LineSegment;
 use crate::inner::vector::Vector;
 use crate::Angle;
 
@@ -102,31 +101,33 @@ impl OptimalIterator {
         let width = self.extent.x;
         let height = self.extent.y;
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_top, width) {
+        let top = ray.calculate_intersection_t(&self.rect_top, width);
+        let bottom = ray.calculate_intersection_t(&self.rect_bottom, width);
+        let left = ray.calculate_intersection_t(&self.rect_left, height);
+        let right = ray.calculate_intersection_t(&self.rect_right, height);
+
+        if let Some(t) = top {
             min = min.min(t);
             max = max.max(t);
         }
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_bottom, width) {
+        if let Some(t) = bottom {
             min = min.min(t);
             max = max.max(t);
         }
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_left, height) {
+        if let Some(t) = left {
             min = min.min(t);
             max = max.max(t);
         }
 
-        if let Some(t) = ray.calculate_intersection_t(&self.rect_right, height) {
+        if let Some(t) = right {
             min = min.min(t);
             max = max.max(t);
         }
 
         if min.is_finite() && max.is_finite() {
-            Some((
-                *ray.origin() + *ray.direction() * min,
-                *ray.origin() + *ray.direction() * max,
-            ))
+            Some((ray.project_out(min), ray.project_out(max)))
         } else {
             None
         }
