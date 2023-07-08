@@ -9,6 +9,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
 
+    let dx = 10.0;
+    let dy = 20.0;
+
     let bg_color = Scalar::from((255.0, 255.0, 255.0, 0.0));
 
     let mut image = Mat::new_rows_cols_with_default(HEIGHT as _, WIDTH as _, CV_8UC3, bg_color)?;
@@ -40,6 +43,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         let (sin, cos) = angle.sin_cos();
         image.set(bg_color)?;
 
+        // The center rectangle.
+        draw_line(
+            &mut image,
+            &Vector::new(0.0, center.y),
+            &Vector::new(WIDTH as _, center.y),
+            Scalar::new(19.0, 44.0, 255.0, 0.0),
+        )?;
+        draw_line(
+            &mut image,
+            &Vector::new(center.x, 0.0),
+            &Vector::new(center.x, HEIGHT as _),
+            Scalar::new(19.0, 44.0, 255.0, 0.0),
+        )?;
+
         // The rotated rectangle.
         let tl = tl.rotate_around(&center, angle);
         let tr = tr.rotate_around(&center, angle);
@@ -64,6 +81,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             &br,
             Scalar::new(128.0, 128.0, 128.0, 0.0),
         )?;
+
+        // Determine (half) the number and offset of rows in rotated space.
+        let y_count_half = ((extent.y / dy) * 0.5).floor();
+        let mut y = center.y - y_count_half * dy;
+        let x = tl.x;
+        while y < bl.y {
+            // Draw the rows.
+            let start = Vector::new(x, y);
+            let end = Vector::new(x + extent.x, y);
+            draw_line(&mut image, &start, &end, Scalar::new(85.0, 60.0, 19.0, 0.0))?;
+
+            y += dy;
+        }
 
         imshow("Rotated Rectangle Test", &image)?;
         if wait_key(33)? > 1 {
