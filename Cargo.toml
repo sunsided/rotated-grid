@@ -1,3 +1,4 @@
 [workspace]
 default-members = ["crates/*"]
 members = ["crates/*", "examples/*"]
+resolver = "2"
