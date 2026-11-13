@@ -5,5 +5,8 @@ allow-branch = ["main"]
 publish = false
 push = true
 tag-name = "{{version}}"
+# One commit per released crate: a consolidated workspace commit only fills in {{version}}
+# when all crates share a version.
+consolidate-commits = false
 pre-release-commit-message = "Release {{version}}"
 tag-message = "Release {{version}}"
