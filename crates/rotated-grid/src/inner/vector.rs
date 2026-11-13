@@ -1,7 +1,7 @@
 //! Contains the [`Vector`] type.
 
 use crate::Angle;
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq)]
 pub struct Vector {
@@ -47,14 +47,6 @@ impl Vector {
     /// Rotates the vector counterclockwise by the specified angle.
     pub fn rotate(&self, angle: Angle) -> Self {
         let (sin, cos) = angle.sin_cos();
-        Self {
-            x: self.x * cos - self.y * sin,
-            y: self.x * sin + self.y * cos,
-        }
-    }
-
-    /// Rotates the vector counterclockwise by the specified angle expressed as its sine and cosine.
-    pub fn rotate_with(&self, sin: f64, cos: f64) -> Self {
         Self {
             x: self.x * cos - self.y * sin,
             y: self.x * sin + self.y * cos,
@@ -134,13 +126,6 @@ impl Add<Vector> for Vector {
     }
 }
 
-impl AddAssign<Vector> for Vector {
-    fn add_assign(&mut self, rhs: Vector) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-    }
-}
-
 impl Sub<Vector> for Vector {
     type Output = Vector;
 
@@ -149,13 +134,6 @@ impl Sub<Vector> for Vector {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
         }
-    }
-}
-
-impl SubAssign<Vector> for Vector {
-    fn sub_assign(&mut self, rhs: Vector) {
-        self.x -= rhs.x;
-        self.y -= rhs.y;
     }
 }
 

@@ -32,15 +32,6 @@ impl LineSegment {
         Line::new(self.start, self.direction)
     }
 
-    pub fn direction_normalized(&self) -> Vector {
-        (self.direction - self.start).normalized()
-    }
-
-    #[inline(always)]
-    pub const fn start(&self) -> &Vector {
-        &self.start
-    }
-
     #[inline(always)]
     pub const fn direction(&self) -> &Vector {
         &self.direction
