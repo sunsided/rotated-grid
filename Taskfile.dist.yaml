@@ -31,6 +31,17 @@ tasks:
       - cargo clippy --workspace --all-targets --fix --allow-dirty --allow-staged
       - task: fmt
 
+  lint:actions:
+    desc: Lint the GitHub workflows with actionlint and zizmor
+    preconditions:
+      - sh: command -v actionlint
+        msg: "actionlint not found — see https://github.com/rhysd/actionlint#install"
+      - sh: command -v zizmor
+        msg: "zizmor not found — see https://docs.zizmor.sh/installation/"
+    cmds:
+      - actionlint
+      - zizmor .github/workflows
+
   check:
     desc: Type-check the workspace and check formatting
     cmds:
