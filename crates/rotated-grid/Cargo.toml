@@ -10,6 +10,10 @@ license = "EUPL-1.2"
 readme = "../../README.md"
 rust-version = "1.59"
 
+[lib]
+# The unit tests run with `cargo test`; this keeps `cargo bench` from listing them as ignored.
+bench = false
+
 [dev-dependencies]
 criterion = "0.5.1"
 
