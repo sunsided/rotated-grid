@@ -25,10 +25,7 @@ impl GridCoord {
 
 impl PartialOrd for GridCoord {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.y.partial_cmp(&other.y) {
-            None => self.x.partial_cmp(&other.x),
-            Some(ordering) => Some(ordering),
-        }
+        (self.y, self.x).partial_cmp(&(other.y, other.x))
     }
 }
 
@@ -41,5 +38,16 @@ impl From<(f64, f64)> for GridCoord {
 impl From<GridCoord> for (f64, f64) {
     fn from(value: GridCoord) -> Self {
         value.into_xy()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn orders_by_y_then_x() {
+        assert!(GridCoord::new(1.0, 0.0) < GridCoord::new(2.0, 0.0));
+        assert!(GridCoord::new(2.0, 0.0) < GridCoord::new(1.0, 1.0));
     }
 }
