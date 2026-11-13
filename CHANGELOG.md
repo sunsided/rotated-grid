@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Grids can now be rotated by any finite angle, including negative angles and angles
+  beyond 90°. Positive angles turn the grid counter-clockwise in image coordinates.
+
+### Fixed
+
+- Grid points near the rectangle's edges were skipped for small rectangles, thin rectangles
+  and angles close to 90°.
+- `GridPositionIterator::new` now panics on non-positive or non-finite spacings instead of
+  looping forever.
+- The upper bound returned by `size_hint` is now always respected.
+- 90° no longer produces a different grid than angles just below it when `dx` and `dy` differ.
+- `GridCoord` now orders by `y`, then `x`; previously points on the same row compared equal.
+
+### Removed
+
+- The internal `AngleOps` trait and the unused `Vector::rotate_with`, `AddAssign`, `SubAssign`,
+  `LineSegment::direction_normalized`, `LineSegment::start` and `Line`'s `Neg`/`Mul` operators.
+
 ## [0.2.0] - 2023-07-08
 
 ### Internal

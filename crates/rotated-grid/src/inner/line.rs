@@ -1,7 +1,6 @@
 //! Contains the [`Line`] type.
 
 use crate::inner::vector::Vector;
-use std::ops::{Mul, Neg};
 
 /// A line determined by a ray starting at a point of origin.
 #[derive(Debug, Clone)]
@@ -62,32 +61,14 @@ impl Line {
         // Project the intersection point out.
         let projected = delta.project_out(&self.direction, t);
 
-        // Squared length along other to the point of intersection.
+        // Length along other to the point of intersection.
         let u = projected.dot(&other.direction);
 
-        if t >= 0.0 && u >= 0.0 && u <= max_u * max_u {
+        // The epsilon keeps intersections exactly at a corner despite rounding.
+        if t >= 0.0 && u >= 0.0 && u <= max_u + 1e-9 {
             Some(t)
         } else {
             None
         }
-    }
-}
-
-impl Neg for Line {
-    type Output = Line;
-
-    fn neg(self) -> Self::Output {
-        Self {
-            origin: self.origin,
-            direction: -self.direction,
-        }
-    }
-}
-
-impl Mul<f64> for Line {
-    type Output = Vector;
-
-    fn mul(self, rhs: f64) -> Self::Output {
-        self.origin + rhs * self.direction
     }
 }

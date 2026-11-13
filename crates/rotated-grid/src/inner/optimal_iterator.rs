@@ -10,7 +10,10 @@ pub struct OptimalIterator {
     min_x: f64,
     max_y: f64,
     center: Vector,
+    /// The extent of the axis-aligned bounding box around the rotated rectangle.
     extent: Vector,
+    /// The width and height of the original rectangle, i.e. its edge lengths.
+    size: Vector,
     delta: Vector,
     offset: Vector,
     /// The line segment describing the top edge of the rotated rectangle.
@@ -42,7 +45,7 @@ impl OptimalIterator {
         // Parameters of the axis-aligned rectangle.
         let rect_width = (tr - tl).norm();
         let rect_height = (bl - tl).norm();
-        let extent = Vector::new(rect_width, rect_height);
+        let size = Vector::new(rect_width, rect_height);
         let center = (tl + tr + bl + br) * 0.25;
 
         // Calculate the rotated rectangle.
@@ -58,9 +61,11 @@ impl OptimalIterator {
         let rect_right = Line::from_points(tr, &br);
 
         // Obtain the Axis-Aligned Bounding Box that wraps the rotated rectangle.
+        // The absolute values make this valid for rotations in any direction.
+        let (sin_abs, cos_abs) = (sin.abs(), cos.abs());
         let extent = Vector::new(
-            extent.x * cos + extent.y * sin,
-            extent.x * sin + extent.y * cos,
+            size.x * cos_abs + size.y * sin_abs,
+            size.x * sin_abs + size.y * cos_abs,
         );
         let tl = center - extent * 0.5;
         let br = center + extent * 0.5;
@@ -76,6 +81,7 @@ impl OptimalIterator {
             max_y: br.y,
             center,
             extent,
+            size,
             delta: Vector::new(dx, dy),
             offset: Vector::new(x0, y0),
             rect_top,
@@ -92,36 +98,26 @@ impl OptimalIterator {
         &self.center
     }
 
-    /// Finds the intersection point that is furthest from the specified line's origin,
-    /// assuming the line's origin already is an intersection point.
+    /// Returns the extent of the axis-aligned bounding box that is iterated over.
+    #[inline(always)]
+    pub(crate) const fn extent(&self) -> &Vector {
+        &self.extent
+    }
+
+    /// Finds the first and last intersection points of the ray with the rotated rectangle.
     fn find_intersections(&self, ray: &Line) -> Option<(Vector, Vector)> {
         let mut min = f64::INFINITY;
         let mut max = f64::NEG_INFINITY;
 
-        let width = self.extent.x;
-        let height = self.extent.y;
+        let width = self.size.x;
+        let height = self.size.y;
 
         let top = ray.calculate_intersection_t(&self.rect_top, width);
         let bottom = ray.calculate_intersection_t(&self.rect_bottom, width);
         let left = ray.calculate_intersection_t(&self.rect_left, height);
         let right = ray.calculate_intersection_t(&self.rect_right, height);
 
-        if let Some(t) = top {
-            min = min.min(t);
-            max = max.max(t);
-        }
-
-        if let Some(t) = bottom {
-            min = min.min(t);
-            max = max.max(t);
-        }
-
-        if let Some(t) = left {
-            min = min.min(t);
-            max = max.max(t);
-        }
-
-        if let Some(t) = right {
+        for t in [top, bottom, left, right].into_iter().flatten() {
             min = min.min(t);
             max = max.max(t);
         }
@@ -173,7 +169,7 @@ impl Iterator for OptimalIterator {
 }
 
 /// Iterator for x coordinates along a ray
-pub struct OptimalXIterator {
+pub(crate) struct OptimalXIterator {
     x: f64,
     dx: f64,
     row_end: f64,
