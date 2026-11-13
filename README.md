@@ -63,4 +63,4 @@ cargo run --package cmyk
 ```
 
 This writes the four grids to `cmyk.svg` in the current directory.
-`cargo run --package rotated-rect` writes SVGs that show how the grid is computed.
+`cargo run --package rotated-rect` opens a window that animates how the grid is computed.

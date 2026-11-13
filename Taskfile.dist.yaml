@@ -58,7 +58,7 @@ tasks:
       - cargo run -p cmyk
 
   run:rotated-rect:
-    desc: Render rotated-rect_<angle>.svg files showing how the grid is computed
+    desc: Open a window animating how the grid is computed (Esc to quit)
     cmds:
       - cargo run -p rotated-rect
 

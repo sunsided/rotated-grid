@@ -1,37 +1,70 @@
 //! Visualizes how the grid is computed: the rectangle is rotated, its rows are intersected
 //! with the rotated rectangle, and the resulting grid points are rotated back.
 //!
-//! Writes one `rotated-rect_<angle>.svg` per angle into the current directory. The left half
-//! shows the rotated space, the right half the original (unrotated) space.
+//! Opens a window that animates the rotation. The left half shows the rotated space,
+//! the right half the original (unrotated) space. Press Escape to quit.
 
+use minifb::{Key, Window, WindowOptions};
 use rotated_grid::{
     inner::line::Line, inner::line_segment::LineSegment, inner::vector::Vector, Angle,
 };
 use std::error::Error;
-use std::fmt::Write as _;
 
-const WIDTH: f64 = 640.0;
-const HEIGHT: f64 = 480.0;
+const WIDTH: usize = 640;
+const HEIGHT: usize = 480;
+
+const WHITE: u32 = 0xFF_FF_FF;
+const BLACK: u32 = 0x00_00_00;
+const GRAY: u32 = 0x80_80_80;
+const RED: u32 = 0xFF_2C_13;
+const MAGENTA: u32 = 0xFF_00_FF;
+const BLUE: u32 = 0x45_6E_91;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let dx = 10.0;
     let dy = 20.0;
-    let x0 = 5.0;
-    let y0 = 5.0;
+    let x0_ = 5.0;
+    let y0_ = 5.0;
 
-    for degrees in [-60.0, 0.0, 30.0, 135.0] {
-        let svg = render(Angle::from_degrees(degrees), dx, dy, x0, y0);
-        let path = format!("rotated-rect_{degrees}.svg");
-        std::fs::write(&path, svg)?;
-        println!("Wrote {path}");
+    let mut window = Window::new(
+        "Rotated Rectangle (Esc to quit)",
+        2 * WIDTH,
+        HEIGHT,
+        WindowOptions::default(),
+    )?;
+    window.set_target_fps(30);
+
+    let mut canvas = Canvas::new(2 * WIDTH, HEIGHT);
+    let mut angle = 0.0f64;
+    let mut increment = 0.3;
+    let mut offset_rotation_angle = 0.0f64;
+
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        // Sweep the angle back and forth.
+        angle += increment;
+        if !(-180.0..=180.0).contains(&angle) {
+            increment = -increment;
+            angle = angle.clamp(-180.0, 180.0);
+        }
+
+        // Rotate the x0/y0 offset for the effect.
+        let (offset_sin, offset_cos) = offset_rotation_angle.sin_cos();
+        let x0 = x0_ * offset_cos + y0_ * offset_sin;
+        let y0 = x0_ * offset_sin - y0_ * offset_cos;
+        offset_rotation_angle += 0.1;
+
+        render(&mut canvas, Angle::from_degrees(angle), dx, dy, x0, y0);
+        window.update_with_buffer(&canvas.pixels, 2 * WIDTH, HEIGHT)?;
     }
 
     Ok(())
 }
 
-fn render(angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64) -> String {
-    let mut rotated_space = String::new();
-    let mut unrotated_space = String::new();
+fn render(canvas: &mut Canvas, angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64) {
+    canvas.pixels.fill(WHITE);
+
+    // The right half of the window shows the unrotated space.
+    let unrotated = Vector::new(WIDTH as f64, 0.0);
 
     // Form the regular rectangle.
     let tl = Vector::new(150.0, 130.0);
@@ -45,29 +78,25 @@ fn render(angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64) -> String {
     let (sin, cos) = angle.sin_cos();
 
     // The center lines.
-    let red = "rgb(255,44,19)";
-    draw_line(
-        &mut rotated_space,
-        &Vector::new(0.0, center.y),
-        &Vector::new(WIDTH, center.y),
-        red,
-    );
-    draw_line(
-        &mut rotated_space,
-        &Vector::new(center.x, 0.0),
-        &Vector::new(center.x, HEIGHT),
-        red,
-    );
+    let (w, h) = (WIDTH as f64, HEIGHT as f64);
+    canvas.line(&Vector::new(0.0, center.y), &Vector::new(w, center.y), RED);
+    canvas.line(&Vector::new(center.x, 0.0), &Vector::new(center.x, h), RED);
 
     // Unrotated rectangle.
-    draw_rectangle(&mut unrotated_space, &tl, &tr, &bl, &br, "black");
+    canvas.rectangle(
+        &(tl + unrotated),
+        &(tr + unrotated),
+        &(bl + unrotated),
+        &(br + unrotated),
+        BLACK,
+    );
 
     // The rotated rectangle.
     let tl = tl.rotate_around(&center, angle);
     let tr = tr.rotate_around(&center, angle);
     let bl = bl.rotate_around(&center, angle);
     let br = br.rotate_around(&center, angle);
-    draw_rectangle(&mut rotated_space, &tl, &tr, &bl, &br, "black");
+    canvas.rectangle(&tl, &tr, &bl, &br, BLACK);
 
     // Determine line segments describing the rotated rectangle.
     let rect_top = LineSegment::from_points(tr, &tl);
@@ -85,15 +114,13 @@ fn render(angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64) -> String {
     let br = center + extent * 0.5;
     let tr = Vector::new(br.x, tl.y);
     let bl = Vector::new(tl.x, br.y);
-    draw_rectangle(&mut rotated_space, &tl, &tr, &bl, &br, "gray");
+    canvas.rectangle(&tl, &tr, &bl, &br, GRAY);
 
     // Determine (half) the number and offset of rows in rotated space.
     let y_count_half = ((extent.y / dy) * 0.5).floor();
     let start_y = center.y - (y_count_half * dy) + y0;
     let mut y = ((tl.y - start_y) / dy).ceil() * dy + start_y;
 
-    let magenta = "rgb(255,0,255)";
-    let blue = "rgb(69,110,145)";
     while y <= br.y {
         // Determine the intersection of the ray from the given row with the rectangle.
         let ray = Line::from_points(Vector::new(tl.x, y), &Vector::new(tl.x + extent.x, y));
@@ -106,9 +133,9 @@ fn render(angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64) -> String {
             rect_width,
             rect_height,
         ) {
-            draw_point(&mut rotated_space, &start, 4.0, magenta);
-            draw_point(&mut rotated_space, &end, 4.0, magenta);
-            draw_line(&mut rotated_space, &start, &end, magenta);
+            canvas.point(&start, 4, MAGENTA);
+            canvas.point(&end, 4, MAGENTA);
+            canvas.line(&start, &end, MAGENTA);
 
             // Determine (half) the number and offset of columns in rotated space, along the row.
             let x_count_half = ((extent.x / dx) * 0.5).floor();
@@ -116,11 +143,11 @@ fn render(angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64) -> String {
             let mut x = ((start.x - start_x) / dx).ceil() * dx + start_x;
             while x <= end.x {
                 let point = Vector::new(x, y);
-                draw_point(&mut rotated_space, &point, 2.0, blue);
+                canvas.point(&point, 2, BLUE);
 
                 // Un-rotate the point for visualization.
                 let point = point.rotate_around_with(&center, -sin, cos);
-                draw_point(&mut unrotated_space, &point, 2.0, blue);
+                canvas.point(&(point + unrotated), 2, BLUE);
 
                 x += dx;
             }
@@ -128,47 +155,56 @@ fn render(angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64) -> String {
 
         y += dy;
     }
-
-    format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{HEIGHT}" viewBox="0 0 {w} {HEIGHT}">
-<rect width="100%" height="100%" fill="white"/>
-<g>{rotated_space}</g>
-<g transform="translate({WIDTH} 0)">{unrotated_space}</g>
-</svg>
-"#,
-        w = 2.0 * WIDTH
-    )
 }
 
-fn draw_line(svg: &mut String, from: &Vector, to: &Vector, color: &str) {
-    let _ = writeln!(
-        svg,
-        r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{color}"/>"#,
-        from.x, from.y, to.x, to.y
-    );
+/// A minimal software framebuffer in minifb's `0RGB` pixel format.
+struct Canvas {
+    pixels: Vec<u32>,
+    width: usize,
+    height: usize,
 }
 
-fn draw_point(svg: &mut String, point: &Vector, radius: f64, color: &str) {
-    let _ = writeln!(
-        svg,
-        r#"<circle cx="{}" cy="{}" r="{radius}" fill="{color}"/>"#,
-        point.x, point.y
-    );
-}
+impl Canvas {
+    fn new(width: usize, height: usize) -> Self {
+        Self {
+            pixels: vec![WHITE; width * height],
+            width,
+            height,
+        }
+    }
 
-fn draw_rectangle(
-    svg: &mut String,
-    tl: &Vector,
-    tr: &Vector,
-    bl: &Vector,
-    br: &Vector,
-    color: &str,
-) {
-    let _ = writeln!(
-        svg,
-        r#"<polygon points="{},{} {},{} {},{} {},{}" fill="none" stroke="{color}"/>"#,
-        tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y
-    );
+    fn set(&mut self, x: i64, y: i64, color: u32) {
+        if x >= 0 && y >= 0 && (x as usize) < self.width && (y as usize) < self.height {
+            self.pixels[y as usize * self.width + x as usize] = color;
+        }
+    }
+
+    fn line(&mut self, from: &Vector, to: &Vector, color: u32) {
+        let delta = *to - *from;
+        let steps = delta.x.abs().max(delta.y.abs()).ceil().max(1.0);
+        for i in 0..=steps as i64 {
+            let p = *from + delta * (i as f64 / steps);
+            self.set(p.x.round() as i64, p.y.round() as i64, color);
+        }
+    }
+
+    fn point(&mut self, center: &Vector, radius: i64, color: u32) {
+        let (cx, cy) = (center.x.round() as i64, center.y.round() as i64);
+        for y in -radius..=radius {
+            for x in -radius..=radius {
+                if x * x + y * y <= radius * radius {
+                    self.set(cx + x, cy + y, color);
+                }
+            }
+        }
+    }
+
+    fn rectangle(&mut self, tl: &Vector, tr: &Vector, bl: &Vector, br: &Vector, color: u32) {
+        self.line(tl, tr, color);
+        self.line(tr, br, color);
+        self.line(br, bl, color);
+        self.line(bl, tl, color);
+    }
 }
 
 /// Finds the first and last intersection points of the ray with the rotated rectangle.
