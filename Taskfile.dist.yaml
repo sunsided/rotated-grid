@@ -1,0 +1,87 @@
+# https://taskfile.dev
+version: '3'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list --sort=none
+    silent: true
+
+  fmt:
+    desc: Format all Rust sources
+    aliases: [format]
+    cmds:
+      - cargo fmt --all
+
+  fmt:check:
+    desc: Check formatting without modifying files
+    cmds:
+      - cargo fmt --all -- --check
+
+  lint:
+    desc: Run clippy across the workspace (warnings as errors)
+    cmds:
+      - cargo clippy --workspace --all-targets -- -D warnings
+
+  lint:fix:
+    desc: Auto-fix clippy lints, then format
+    aliases: [fix]
+    cmds:
+      - cargo clippy --workspace --all-targets --fix --allow-dirty --allow-staged
+      - task: fmt
+
+  check:
+    desc: Type-check the workspace and check formatting
+    cmds:
+      - cargo check --workspace --all-targets
+      - task: fmt:check
+
+  build:
+    desc: Build the library, examples and benchmarks
+    cmds:
+      - cargo build --workspace --all-targets
+
+  test:
+    desc: Run unit tests and doctests
+    cmds:
+      - cargo test --workspace {{.CLI_ARGS}}
+
+  bench:
+    desc: Run the criterion benchmarks
+    cmds:
+      - cargo bench -p rotated-grid {{.CLI_ARGS}}
+
+  run:
+    desc: Render the CMYK example grids to cmyk.svg
+    cmds:
+      - cargo run -p cmyk
+
+  run:rotated-rect:
+    desc: Render rotated-rect_<angle>.svg files showing how the grid is computed
+    cmds:
+      - cargo run -p rotated-rect
+
+  docs:
+    desc: Build the API documentation
+    cmds:
+      - cargo doc -p rotated-grid --no-deps
+
+  docs:open:
+    desc: Build and open the API documentation
+    cmds:
+      - cargo doc -p rotated-grid --no-deps --open
+
+  clean:
+    desc: Remove build artifacts
+    status:
+      - test ! -d target
+    cmds:
+      - cargo clean
+
+  ci:
+    desc: Run the checks expected in CI (fmt, lint, test)
+    cmds:
+      - task: fmt:check
+      - task: lint
+      - task: test

@@ -183,6 +183,7 @@ mod tests {
     use super::*;
 
     //noinspection RsApproxConstant
+    #[allow(clippy::approx_constant)]
     #[test]
     fn test_normalize() {
         assert_eq!(

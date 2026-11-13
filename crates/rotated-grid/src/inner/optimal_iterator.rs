@@ -29,6 +29,7 @@ pub struct OptimalIterator {
 
 impl OptimalIterator {
     /// Creates a new iterator from the specified axis-aligned (i.e., unrotated) coordinates.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         tl: Vector,
         tr: Vector,
