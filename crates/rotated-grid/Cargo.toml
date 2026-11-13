@@ -16,6 +16,7 @@ bench = false
 
 [dev-dependencies]
 criterion = "0.5.1"
+naga = { version = "30.0.2", features = ["wgsl-in"] }
 
 [[bench]]
 name = "benchmark"

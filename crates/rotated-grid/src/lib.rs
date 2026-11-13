@@ -53,6 +53,16 @@ pub use angle::Angle;
 pub use grid::Grid;
 pub use grid_coord::GridCoord;
 
+/// WGSL functions for looking up the grid from shaders.
+///
+/// The source defines a `RotatedGrid` struct, laid out like [`Grid::to_uniform`], and
+/// functions such as `rotated_grid_nearest` and `rotated_grid_neighbors` that find the grid
+/// points around a position. They use the same lattice as [`GridPositionIterator`], so a
+/// shader can draw on exactly the points the iterator yields without receiving them one by one.
+///
+/// Prepend it to your shader source, or register it with a shader import system.
+pub const WGSL: &str = include_str!("rotated_grid.wgsl");
+
 /// Compiles and runs the code examples in the README as doctests.
 #[cfg(doctest)]
 #[doc = include_str!("../../../README.md")]
@@ -208,6 +218,29 @@ mod tests {
         // Positive angles turn the grid counter-clockwise when Y points down.
         assert!((b.x - a.x - dx * cos).abs() < 1e-9);
         assert!((b.y - a.y + dx * sin).abs() < 1e-9);
+    }
+
+    #[test]
+    fn wgsl_is_valid() {
+        let module = naga::front::wgsl::parse_str(WGSL).expect("WGSL parses");
+        naga::valid::Validator::new(
+            naga::valid::ValidationFlags::all(),
+            naga::valid::Capabilities::empty(),
+        )
+        .validate(&module)
+        .expect("WGSL validates");
+    }
+
+    #[test]
+    fn uniform_layout_matches_wgsl_struct() {
+        let grid = Grid::new(600.0, 400.0)
+            .spacing(7.0, 8.0)
+            .offset(1.0, 2.0)
+            .angle(Angle::from_radians(0.5));
+        assert_eq!(
+            grid.to_uniform(),
+            [600.0, 400.0, 7.0, 8.0, 1.0, 2.0, 0.5, 0.0]
+        );
     }
 
     #[test]

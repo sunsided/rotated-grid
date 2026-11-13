@@ -75,6 +75,23 @@ impl Grid {
     pub const fn angle(self, angle: Angle) -> Self {
         Self { angle, ..self }
     }
+
+    /// Packs the grid into the layout of the `RotatedGrid` struct in [`crate::WGSL`]:
+    /// `[width, height, dx, dy, x0, y0, angle_in_radians, 0.0]`.
+    ///
+    /// Write the values into a uniform or storage buffer to use the grid from a shader.
+    pub fn to_uniform(&self) -> [f32; 8] {
+        [
+            self.width as f32,
+            self.height as f32,
+            self.dx as f32,
+            self.dy as f32,
+            self.x0 as f32,
+            self.y0 as f32,
+            self.angle.into_radians() as f32,
+            0.0,
+        ]
+    }
 }
 
 impl IntoIterator for Grid {

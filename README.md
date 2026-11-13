@@ -73,6 +73,43 @@ let positions: Vec<_> = grid.into_iter().collect();
   collect and sort them: `GridCoord` orders by `y`, then `x`.
 - Non-positive spacings or sizes, and non-finite values, panic.
 
+## In shaders
+
+`rotated_grid::WGSL` contains WGSL functions that answer the inverse question per pixel: which
+grid points are near this position? They use the same lattice as the iterator, so a fragment
+shader can draw on exactly the points the iterator yields, from just the grid parameters:
+
+```rust
+use rotated_grid::{Angle, Grid};
+
+let grid = Grid::new(800.0, 500.0)
+    .spacing(8.0, 8.0)
+    .angle(Angle::from_degrees(15.0));
+
+// Write these eight values into a uniform buffer bound as `RotatedGrid` ...
+let uniform: [f32; 8] = grid.to_uniform();
+
+// ... and prepend the functions to your shader source.
+let source = format!("{}\n{}", rotated_grid::WGSL, "/* your shader */");
+```
+
+```wgsl
+@group(0) @binding(0) var<uniform> grid: RotatedGrid;
+
+@fragment
+fn fs_main(@builtin(position) position: vec4<f32>) -> @location(0) vec4<f32> {
+    let dot = rotated_grid_nearest(grid, position.xy);
+    let inside = distance(position.xy, dot) < 2.0;
+    return select(vec4<f32>(1.0), vec4<f32>(0.0, 0.0, 0.0, 1.0), inside);
+}
+```
+
+- `rotated_grid_nearest(grid, p)` returns the grid point nearest to `p`.
+- `rotated_grid_neighbors(grid, p)` returns the four grid points around `p`, for shapes that
+  can be larger than half the spacing, such as halftone dots in dark areas.
+- `rotated_grid_cell`, `rotated_grid_point` and `rotated_grid_contains` work with lattice
+  indices and the rectangle bounds.
+
 ## Demos
 
 ### CMYK halftone
