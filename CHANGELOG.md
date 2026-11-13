@@ -5,13 +5,16 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-13
-
 ### Added
 
 - `rotated_grid::WGSL` provides WGSL functions (`rotated_grid_nearest`, `rotated_grid_neighbors`
   and more) that find the grid points around a position in a shader, using the same lattice as
   the iterator. `Grid::to_uniform` packs a grid into the matching `RotatedGrid` uniform layout.
+
+## [1.0.0] - 2026-11-13
+
+### Added
+
 - `Grid` describes a grid with named fields and builder methods (`Grid::new(w, h)`,
   `.spacing(dx, dy)`, `.offset(x0, y0)`, `.angle(a)`) and implements `IntoIterator`.
 - Grids can now be rotated by any finite angle, including negative angles and angles
