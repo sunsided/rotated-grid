@@ -119,6 +119,7 @@ impl GridPositionIterator {
 impl Iterator for GridPositionIterator {
     type Item = GridCoord;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let point = self.inner.next()?;
 

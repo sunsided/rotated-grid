@@ -6,7 +6,16 @@ use crate::Angle;
 /// Only coordinates that are guaranteed to lie within the original
 /// axis-aligned rectangle are produced.
 pub struct OptimalIterator {
-    y: f64,
+    /// The next x coordinate on the current row.
+    x: f64,
+    /// The last x coordinate on the current row.
+    row_end_x: f64,
+    /// The y coordinate of the current row.
+    row_y: f64,
+    /// The y coordinate of the next row.
+    next_y: f64,
+    /// The x coordinate of the grid column that all rows are aligned to.
+    start_x: f64,
     min_x: f64,
     max_y: f64,
     center: Vector,
@@ -15,7 +24,6 @@ pub struct OptimalIterator {
     /// The width and height of the original rectangle, i.e. its edge lengths.
     size: Vector,
     delta: Vector,
-    offset: Vector,
     /// The line segment describing the top edge of the rotated rectangle.
     rect_top: Line,
     /// The line segment describing the left edge of the rotated rectangle.
@@ -24,7 +32,6 @@ pub struct OptimalIterator {
     rect_bottom: Line,
     /// The line segment describing the right edge of the rotated rectangle.
     rect_right: Line,
-    x_iter: Option<OptimalXIterator>,
 }
 
 impl OptimalIterator {
@@ -76,20 +83,27 @@ impl OptimalIterator {
         let start_y = center.y - (y_count_half * dy) + y0;
         let y = ((tl.y - start_y) / dy).ceil() * dy + start_y;
 
+        // Determine (half) the number and offset of columns in rotated space.
+        let x_count_half = ((extent.x / dx) * 0.5).floor();
+        let start_x = center.x - (x_count_half * dx) + x0;
+
         Self {
-            y,
+            // An empty current row; the first call to `next` sets up the first row.
+            x: f64::INFINITY,
+            row_end_x: f64::NEG_INFINITY,
+            row_y: y,
+            next_y: y,
+            start_x,
             min_x: tl.x,
             max_y: br.y,
             center,
             extent,
             size,
             delta: Vector::new(dx, dy),
-            offset: Vector::new(x0, y0),
             rect_top,
             rect_left,
             rect_bottom,
             rect_right,
-            x_iter: None,
         }
     }
 
@@ -131,85 +145,52 @@ impl OptimalIterator {
     }
 }
 
+impl OptimalIterator {
+    /// Advances to the next row that intersects the rectangle and returns its first point.
+    /// Runs once per row, so it is kept out of the inlined per-point path.
+    fn next_row(&mut self) -> Option<Vector> {
+        loop {
+            let y = self.next_y;
+            if y > self.max_y {
+                return None;
+            }
+            self.next_y += self.delta.y;
+
+            // Determine the intersection of the ray along the row with the rectangle.
+            let row_start = Vector::new(self.min_x, y);
+            let row_end = Vector::new(self.min_x + self.extent.x, y);
+            let ray = Line::from_points(row_start, &row_end);
+            let Some((start, end)) = self.find_intersections(&ray) else {
+                continue;
+            };
+
+            // The first x coordinate along the row that lies on the grid
+            // and is not smaller than the start coordinate.
+            let dx = self.delta.x;
+            let x = ((start.x - self.start_x) / dx).ceil() * dx + self.start_x;
+            if x > end.x {
+                continue;
+            }
+
+            self.x = x + dx;
+            self.row_end_x = end.x;
+            self.row_y = y;
+            return Some(Vector::new(x, y));
+        }
+    }
+}
+
 impl Iterator for OptimalIterator {
     type Item = Vector;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.y > self.max_y {
-                return None;
-            }
-
-            if let Some(iter) = self.x_iter.as_mut() {
-                if let Some(x) = iter.next() {
-                    return Some(Vector::new(x, self.y));
-                }
-
-                self.y += self.delta.y;
-            }
-
-            // Obtain the rows.
-            let x = self.min_x;
-            let row_start = Vector::new(x, self.y);
-            let row_end = Vector::new(x + self.extent.x, self.y);
-
-            // Determine the intersection of the ray from the given row with the rectangle.
-            let ray = Line::from_points(row_start, &row_end);
-            if let Some((start, end)) = self.find_intersections(&ray) {
-                self.x_iter = Some(OptimalXIterator::new(
-                    self.center,
-                    self.extent,
-                    start,
-                    end,
-                    self.delta.x,
-                    self.offset.x,
-                ));
-            }
-        }
-    }
-}
-
-/// Iterator for x coordinates along a ray
-pub(crate) struct OptimalXIterator {
-    x: f64,
-    dx: f64,
-    row_end: f64,
-}
-
-impl OptimalXIterator {
-    pub fn new(
-        center: Vector,
-        extent: Vector,
-        row_start: Vector,
-        row_end: Vector,
-        dx: f64,
-        x0: f64,
-    ) -> Self {
-        // Determine the first x coordinate along the row that is
-        // an integer multiple of dx away from the center and larger
-        // than the start coordinate.
-        let x_count_half = ((extent.x / dx) * 0.5).floor();
-        let start_x = center.x - (x_count_half * dx) + x0;
-        let x = ((row_start.x - start_x) / dx).ceil() * dx + start_x;
-
-        Self {
-            x,
-            dx,
-            row_end: row_end.x,
-        }
-    }
-}
-
-impl Iterator for OptimalXIterator {
-    type Item = f64;
-
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let x = self.x;
-        if x > self.row_end {
-            return None;
+        if x <= self.row_end_x {
+            self.x += self.delta.x;
+            return Some(Vector::new(x, self.row_y));
         }
 
-        self.x += self.dx;
-        Some(x)
+        self.next_row()
     }
 }
