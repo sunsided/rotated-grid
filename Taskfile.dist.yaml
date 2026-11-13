@@ -90,6 +90,14 @@ tasks:
     cmds:
       - cargo clean
 
+  release:
+    desc: "Bump, tag and push a release, e.g. `task release -- minor` (dry run; add --execute to do it)"
+    preconditions:
+      - sh: command -v cargo-release
+        msg: "cargo-release not found — cargo install cargo-release"
+    cmds:
+      - cargo release {{.CLI_ARGS}}
+
   ci:
     desc: Run the checks expected in CI (fmt, lint, test)
     cmds:

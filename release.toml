@@ -1,0 +1,9 @@
+# `cargo release <level>` bumps the version, updates CHANGELOG.md, commits, tags and pushes.
+# Publishing happens in CI: the pushed tag triggers .github/workflows/release.yml, which
+# publishes to crates.io via trusted publishing and then creates the GitHub Release.
+allow-branch = ["main"]
+publish = false
+push = true
+tag-name = "{{version}}"
+pre-release-commit-message = "Release {{version}}"
+tag-message = "Release {{version}}"
