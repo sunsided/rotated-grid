@@ -133,6 +133,16 @@ the source image and `Esc` quits.
     <br/><em>Zoomed in: where the screens overlap, the inks mix.</em>
 </div>
 
+### CMYK halftone on the GPU
+
+```shell
+cargo run --release --package cmyk-wgpu
+```
+
+The same halftone, rendered entirely in a WGSL fragment shader with `wgpu`: the CPU only
+uploads the four grids' parameters. It has the same keys as the CPU demo, and its frames
+match the CPU rendering to within rounding.
+
 ### How the grid is computed
 
 ```shell

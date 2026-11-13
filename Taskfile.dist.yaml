@@ -68,6 +68,11 @@ tasks:
     cmds:
       - cargo run --release -p cmyk
 
+  run:cmyk-wgpu:
+    desc: Open the CMYK halftone demo rendered in a WGSL shader (same keys as run)
+    cmds:
+      - cargo run --release -p cmyk-wgpu
+
   run:rotated-rect:
     desc: Open a window animating how the grid is computed (Esc to quit)
     cmds:

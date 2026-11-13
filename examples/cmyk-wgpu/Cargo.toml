@@ -1,0 +1,14 @@
+[package]
+name = "cmyk-wgpu"
+description = "CMYK halftone rendered entirely in a WGSL fragment shader"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/sunsided/rotated-grid"
+publish = false
+
+[dependencies]
+minifb = { version = "0.29.0", default-features = false, features = ["x11"] }
+pollster = "1.0.1"
+raw-window-handle = "0.6"
+rotated-grid = { path = "../../crates/rotated-grid" }
+wgpu = "30.0.2"
