@@ -7,4 +7,3 @@ publish = false
 
 [dependencies]
 rotated-grid = { path = "../../crates/rotated-grid" }
-opencv = { version = "0.82.1", default-features = false, features = ["imgproc", "highgui"] }

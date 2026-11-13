@@ -17,7 +17,7 @@ usage example.
 ## Usage example
 
 ```rust
-use rotated_grid::{Angle, GridPositionIterator, GridCoordinate};
+use rotated_grid::{Angle, GridPositionIterator, GridCoord};
 
 const WIDTH: usize = 16;
 const HEIGHT: usize = 10;
@@ -46,7 +46,7 @@ fn main() {
         let (_, expected_max) = grid.size_hint();
         let mut count = 0;
     
-        for GridCoordinate { x, y } in grid {
+        for GridCoord { x, y } in grid {
             println!("{x}, {y}", x = x, y = y);
             count += 1;
         }
@@ -61,3 +61,6 @@ You can run the example application using
 ```shell
 cargo run --package cmyk
 ```
+
+This writes the four grids to `cmyk.svg` in the current directory.
+`cargo run --package rotated-rect` writes SVGs that show how the grid is computed.
