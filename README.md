@@ -15,9 +15,6 @@ This can come in useful e.g. when you want to create halftone dithering grids fo
     <img src="https://raw.githubusercontent.com/sunsided/rotated-grid/main/readme/halftone.png" alt="A color gradient printed as a CMYK halftone" />
 </div>
 
-See e.g. my [opencv-cartoon-effect](https://github.com/sunsided/opencv-cartoon-effect) repo for an almost-real-world
-usage example.
-
 ## Usage
 
 ```shell
