@@ -1,5 +1,9 @@
 # Rotated grids in Rust
 
+[![Crates.io](https://img.shields.io/crates/v/rotated-grid.svg)](https://crates.io/crates/rotated-grid)
+[![Docs](https://docs.rs/rotated-grid/badge.svg)](https://docs.rs/rotated-grid)
+[![Rust](https://github.com/sunsided/rotated-grid/actions/workflows/rust.yml/badge.svg)](https://github.com/sunsided/rotated-grid/actions/workflows/rust.yml)
+
 🎨 _For halftone dithering and more._
 
 ---
@@ -8,13 +12,20 @@ This crate provides a generator for enumerating grid coordinates at a specified 
 This can come in useful e.g. when you want to create halftone dithering grids for CMYK processing:
 
 <div align="center" style="text-align: center">
-    <img src="readme/grid.png" alt="CMYK grid examples" />
+    <img src="https://raw.githubusercontent.com/sunsided/rotated-grid/main/readme/halftone.png" alt="A color gradient printed as a CMYK halftone" />
 </div>
 
-See e.g. my [opencv-cartoon-effect](https://github.com/sunsided/opencv-cartoon-effect) repo for an almost-real-world 
+See e.g. my [opencv-cartoon-effect](https://github.com/sunsided/opencv-cartoon-effect) repo for an almost-real-world
 usage example.
 
-## Usage example
+## Usage
+
+```shell
+cargo add rotated-grid
+```
+
+Describe the grid with `Grid` and iterate over it. Every yielded `GridCoord` lies inside the
+`width` × `height` rectangle:
 
 ```rust
 use rotated_grid::{Angle, Grid, GridCoord};
@@ -58,13 +69,60 @@ let grid = Grid {
 let positions: Vec<_> = grid.into_iter().collect();
 ```
 
-You can run the example application using
+- `dx` and `dy` set the spacing along the rotated axes, `x0` and `y0` shift the grid along them.
+- Any finite angle works. Positive angles turn the grid counter-clockwise in image
+  coordinates, i.e. with the Y axis pointing down.
+- Positions are generated row by row in rotated space. If you need them top to bottom,
+  collect and sort them: `GridCoord` orders by `y`, then `x`.
+- Non-positive spacings or sizes, and non-finite values, panic.
+
+## Demos
+
+### CMYK halftone
 
 ```shell
-cargo run --package cmyk
+cargo run --release --package cmyk
 ```
 
-This opens a window that prints a color gradient as a CMYK halftone, with each ink on its own
-rotated grid. Keys `1`–`4` toggle the inks, `+`/`-` change the dot spacing and `Space` shows
-the source image.
-`cargo run --package rotated-rect` opens a window that animates how the grid is computed.
+Prints a color gradient as a CMYK halftone. Each ink gets its own rotated grid, and the dot
+size follows the amount of that ink at the dot. The inks multiply on white paper, just like
+printed ink. Keys `1`–`4` toggle the inks, `+`/`-` change the dot spacing, `Space` shows
+the source image and `Esc` quits.
+
+<div align="center" style="text-align: center">
+    <img src="https://raw.githubusercontent.com/sunsided/rotated-grid/main/readme/inks.png" alt="The cyan, magenta, yellow and black screens at 15°, 75°, 0° and 45°" />
+    <br/><em>The four screens on their own.</em>
+</div>
+
+<div align="center" style="text-align: center">
+    <img src="https://raw.githubusercontent.com/sunsided/rotated-grid/main/readme/halftone-zoom.png" alt="A zoomed-in section of the halftone" />
+    <br/><em>Zoomed in: where the screens overlap, the inks mix.</em>
+</div>
+
+### How the grid is computed
+
+```shell
+cargo run --package rotated-rect
+```
+
+Animates the algorithm. The rectangle is rotated (left), and each grid row is intersected with
+it, so only positions inside the rectangle are visited. Rotating them back yields the grid in
+the original rectangle (right).
+
+<div align="center" style="text-align: center">
+    <img src="https://raw.githubusercontent.com/sunsided/rotated-grid/main/readme/rotated-rect.png" alt="The rotated rectangle with its grid rows on the left and the resulting grid on the right" />
+</div>
+
+## Development
+
+The [Taskfile](https://taskfile.dev) wraps the common commands: `task test`, `task lint`,
+`task lint:actions` (actionlint and zizmor), `task bench` and `task ci`.
+
+Releases are cut with [cargo-release](https://github.com/crate-ci/cargo-release):
+`task release -- <level> --execute` updates the version and `CHANGELOG.md`, then tags and
+pushes. The tag triggers the release workflow, which publishes to crates.io via trusted
+publishing and then creates the GitHub Release.
+
+## License
+
+Licensed under the [European Union Public Licence (EUPL), Version 1.2](https://github.com/sunsided/rotated-grid/blob/main/LICENSE.md).
