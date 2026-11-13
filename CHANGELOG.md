@@ -5,6 +5,8 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-13
+
 ### Added
 
 - `rotated_grid::WGSL` provides WGSL functions (`rotated_grid_nearest`, `rotated_grid_neighbors`
@@ -64,7 +66,8 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - 🎉 Initial release.
 
-[Unreleased]: https://github.com/sunsided/rotated-grid/compare/1.0.0...HEAD
+[Unreleased]: https://github.com/sunsided/rotated-grid/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/sunsided/rotated-grid/releases/tag/1.1.0
 [1.0.0]: https://github.com/sunsided/rotated-grid/releases/tag/1.0.0
 [0.2.0]: https://github.com/sunsided/rotated-grid/releases/tag/0.2.0
 [0.1.1]: https://github.com/sunsided/rotated-grid/releases/tag/0.1.1
