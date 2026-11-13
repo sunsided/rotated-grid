@@ -8,4 +8,6 @@ repository = "https://github.com/sunsided/rotated-grid"
 publish = false
 
 [dependencies]
+# X11 only: GNOME draws no borders for Wayland clients; XWayland windows get them.
+minifb = { version = "0.29.0", default-features = false, features = ["x11"] }
 rotated-grid = { path = "../../crates/rotated-grid" }

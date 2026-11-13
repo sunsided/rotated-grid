@@ -64,9 +64,9 @@ tasks:
       - cargo bench -p rotated-grid {{.CLI_ARGS}}
 
   run:
-    desc: Render the CMYK example grids to cmyk.svg
+    desc: Open the interactive CMYK halftone demo (1-4 inks, +/- spacing, Space source, Esc quit)
     cmds:
-      - cargo run -p cmyk
+      - cargo run --release -p cmyk
 
   run:rotated-rect:
     desc: Open a window animating how the grid is computed (Esc to quit)

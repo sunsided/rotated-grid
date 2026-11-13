@@ -64,5 +64,7 @@ You can run the example application using
 cargo run --package cmyk
 ```
 
-This writes the four grids to `cmyk.svg` in the current directory.
+This opens a window that prints a color gradient as a CMYK halftone, with each ink on its own
+rotated grid. Keys `1`–`4` toggle the inks, `+`/`-` change the dot spacing and `Space` shows
+the source image.
 `cargo run --package rotated-rect` opens a window that animates how the grid is computed.
