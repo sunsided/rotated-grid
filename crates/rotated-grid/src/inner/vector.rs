@@ -1,7 +1,6 @@
 //! Contains the [`Vector`] type.
 
-use crate::Angle;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq)]
 pub struct Vector {
@@ -18,6 +17,7 @@ impl Vector {
 
     /// Rounds the coordinates to the specified number of decimals.
     /// This simplifies testing.
+    #[cfg(test)]
     pub fn round(&self, decimals: u32) -> Self {
         let scale = 10_f64.powi(decimals as i32);
         Self {
@@ -38,35 +38,10 @@ impl Vector {
         self.norm_sq().sqrt()
     }
 
-    /// Calculates the euclidean norm of the vector.
+    /// Returns the vector scaled to unit length.
     #[inline(always)]
     pub fn normalized(&self) -> Self {
         *self / self.norm()
-    }
-
-    /// Rotates the vector counterclockwise by the specified angle.
-    pub fn rotate(&self, angle: Angle) -> Self {
-        let (sin, cos) = angle.sin_cos();
-        Self {
-            x: self.x * cos - self.y * sin,
-            y: self.x * sin + self.y * cos,
-        }
-    }
-
-    /// Rotates the vector counterclockwise by the specified angle.
-    pub fn rotate_around(&self, pivot: &Self, angle: Angle) -> Self {
-        let (sin, cos) = angle.sin_cos();
-
-        let x0 = self.x - pivot.x;
-        let y0 = self.y - pivot.y;
-
-        let x = x0 * cos - y0 * sin;
-        let y = x0 * sin + y0 * cos;
-
-        Self {
-            x: x + pivot.x,
-            y: y + pivot.y,
-        }
     }
 
     /// Rotates the vector counterclockwise by the specified angle expressed as its sine and cosine.
@@ -80,15 +55,6 @@ impl Vector {
         Self {
             x: x + pivot.x,
             y: y + pivot.y,
-        }
-    }
-
-    /// Provides a vector orthogonal to the specified one by rotating the vector
-    /// 90° counterclockwise.
-    pub fn orthogonal(&self) -> Self {
-        Self {
-            x: -self.y,
-            y: self.x,
         }
     }
 
@@ -148,14 +114,6 @@ impl Mul<f64> for Vector {
     }
 }
 
-impl Mul<Vector> for f64 {
-    type Output = Vector;
-
-    fn mul(self, rhs: Vector) -> Self::Output {
-        rhs * self
-    }
-}
-
 impl Div<f64> for Vector {
     type Output = Vector;
 
@@ -163,17 +121,6 @@ impl Div<f64> for Vector {
         Self {
             x: self.x / rhs,
             y: self.y / rhs,
-        }
-    }
-}
-
-impl Neg for Vector {
-    type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        Self {
-            x: -self.x,
-            y: -self.y,
         }
     }
 }
@@ -192,73 +139,6 @@ mod tests {
                 x: 0.7071,
                 y: 0.7071
             }
-        );
-    }
-
-    #[test]
-    fn test_rotate() {
-        let vector = Vector { x: 1.0, y: 0.0 };
-        assert_eq!(
-            vector.rotate(Angle::from_degrees(0.0)).round(3),
-            Vector { x: 1.0, y: 0.0 }
-        );
-        assert_eq!(
-            vector.rotate(Angle::from_degrees(90.0)).round(3),
-            Vector { x: 0.0, y: 1.0 }
-        );
-        assert_eq!(
-            vector.rotate(Angle::from_degrees(180.0)).round(3),
-            Vector { x: -1.0, y: 0.0 }
-        );
-        assert_eq!(
-            vector.rotate(Angle::from_degrees(-90.0)).round(3),
-            Vector { x: 0.0, y: -1.0 }
-        );
-        assert_eq!(
-            vector.rotate(Angle::from_degrees(45.0)).round(3),
-            Vector { x: 1.0, y: 1.0 }.normalized().round(3)
-        );
-    }
-
-    #[test]
-    fn test_rotate_around() {
-        let vector = Vector { x: 1.0, y: 0.0 };
-
-        // Zero rotation (around any point) results in no change.
-        assert_eq!(
-            vector
-                .rotate_around(&vector, Angle::from_degrees(0.0))
-                .round(3),
-            Vector { x: 1.0, y: 0.0 }
-        );
-
-        // Any rotation around the point itself results in no change.
-        assert_eq!(
-            vector
-                .rotate_around(&vector, Angle::from_degrees(45.0))
-                .round(3),
-            Vector { x: 1.0, y: 0.0 }
-        );
-
-        // Rotate around the specified pivot vector.
-        assert_eq!(
-            vector
-                .rotate_around(&Vector { x: 1.0, y: 1.0 }, Angle::from_degrees(90.0))
-                .round(3),
-            Vector { x: 2.0, y: 1.0 }
-        );
-    }
-
-    #[test]
-    fn test_orthogonal() {
-        assert_eq!(
-            Vector { x: 1.0, y: 0.0 }.orthogonal(),
-            Vector { x: 0.0, y: 1.0 }
-        );
-
-        assert_eq!(
-            Vector { x: 0.0, y: 1.0 }.orthogonal(),
-            Vector { x: -1.0, y: 0.0 }
         );
     }
 

@@ -3,15 +3,20 @@
 All notable changes to this project will be documented in this file.
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [Unreleased]
 
 ### Added
 
+- `Grid` describes a grid with named fields and builder methods (`Grid::new(w, h)`,
+  `.spacing(dx, dy)`, `.offset(x0, y0)`, `.angle(a)`) and implements `IntoIterator`.
 - Grids can now be rotated by any finite angle, including negative angles and angles
   beyond 90°. Positive angles turn the grid counter-clockwise in image coordinates.
 
 ### Changed
 
+- **Breaking:** `GridPositionIterator::new` takes a `Grid` instead of seven positional numbers,
+  which could be swapped without a compile error.
+- **Breaking:** `Angle` is no longer generic; use `Angle` instead of `Angle::<f64>`.
 - Iterating grid points is about 3–5× faster: the per-point `next` calls can now be inlined
   into calling crates, and row setup is kept out of the per-point path.
 
@@ -27,8 +32,9 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- The internal `AngleOps` trait and the unused `Vector::rotate_with`, `AddAssign`, `SubAssign`,
-  `LineSegment::direction_normalized`, `LineSegment::start` and `Line`'s `Neg`/`Mul` operators.
+- **Breaking:** The `inner` module (`Vector`, `Line`, `LineSegment`, `OptimalIterator`) and the
+  crate-root re-export of `OptimalIterator` are no longer public. They were implementation
+  details exposed for the demo application.
 
 ## [0.2.0] - 2023-07-08
 
@@ -50,6 +56,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - 🎉 Initial release.
 
+[Unreleased]: https://github.com/sunsided/rotated-grid/compare/0.2.0...HEAD
 [0.2.0]: https://github.com/sunsided/rotated-grid/releases/tag/0.2.0
 [0.1.1]: https://github.com/sunsided/rotated-grid/releases/tag/0.1.1
 [0.1.0]: https://github.com/sunsided/rotated-grid/releases/tag/0.1.0

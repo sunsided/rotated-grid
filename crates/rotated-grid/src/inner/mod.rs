@@ -1,6 +1,5 @@
-//! Internal types exposed mainly for demo use.
+//! Geometry helpers used by the grid iterator.
 
 pub mod line;
-pub mod line_segment;
-pub(crate) mod optimal_iterator;
+pub mod optimal_iterator;
 pub mod vector;

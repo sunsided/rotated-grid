@@ -1,22 +1,19 @@
 //! # Rotated grids for CMYK halftone dithering and more.
 //!
-//! This crate provides the [`GridPositionIterator`] type that creates
-//! spaced grid positions along a rotated grid.
+//! This crate enumerates the positions of a rotated grid that fall inside an axis-aligned
+//! rectangle. Describe the grid with [`Grid`] and iterate over it to get [`GridCoord`]s.
 //!
 //! ## Order of generated coordinates
 //!
 //! Do note that the generation order of the coordinates depends on the specific grid parameters
 //! and may not be in the most efficient layout when used directly, depending on your use case.
 //! For image processing you may want to prefer a top-down order, in which case you should collect
-//! the coordinates into a vector and sort by `y` coordinate first.
+//! the coordinates into a vector and sort them; [`GridCoord`] orders by `y`, then `x`.
 //!
 //! ## Example
 //!
 //! ```
-//! use rotated_grid::{Angle, GridCoord, GridPositionIterator};
-//!
-//! const WIDTH: usize = 16;
-//! const HEIGHT: usize = 10;
+//! use rotated_grid::{Angle, Grid, GridCoord};
 //!
 //! let halftone_grids = [
 //!     ("Cyan", 15.0),
@@ -28,15 +25,10 @@
 //! for (name, angle) in halftone_grids {
 //!     println!("{name} at {angle}°");
 //!
-//!     let grid = GridPositionIterator::new(
-//!         WIDTH as _,
-//!         HEIGHT as _,
-//!         7.0,
-//!         7.0,
-//!         0.0,
-//!         0.0,
-//!         Angle::<f64>::from_degrees(angle),
-//!     );
+//!     let grid = Grid::new(16.0, 10.0)
+//!         .spacing(7.0, 7.0)
+//!         .angle(Angle::from_degrees(angle))
+//!         .into_iter();
 //!
 //!     let (_, expected_max) = grid.size_hint();
 //!     let mut count = 0;
@@ -51,13 +43,20 @@
 //! ```
 
 mod angle;
+mod grid;
 mod grid_coord;
-pub mod inner;
+mod inner;
 
+use crate::inner::optimal_iterator::OptimalIterator;
 use crate::inner::vector::Vector;
 pub use angle::Angle;
+pub use grid::Grid;
 pub use grid_coord::GridCoord;
-pub use inner::optimal_iterator::OptimalIterator;
+
+/// Compiles and runs the code examples in the README as doctests.
+#[cfg(doctest)]
+#[doc = include_str!("../../../README.md")]
+struct ReadmeDoctests;
 
 /// An iterator for positions on a rotated grid.
 pub struct GridPositionIterator {
@@ -69,30 +68,23 @@ pub struct GridPositionIterator {
 }
 
 impl GridPositionIterator {
-    /// Creates a new iterator.
-    ///
-    /// ## Arguments
-    /// * `width` - The width of the grid. Must be positive.
-    /// * `height` - The height of the grid. Must be positive.
-    /// * `dx` - The spacing of grid elements along the (rotated) X axis. Must be positive.
-    /// * `dy` - The spacing of grid elements along the (rotated) Y axis. Must be positive.
-    /// * `x0` - The X offset of the first grid element.
-    /// * `y0` - The Y offset of the first grid element.
-    /// * `alpha` - The orientation of the grid. Any finite angle is allowed; positive angles
-    ///   turn the grid counter-clockwise in image coordinates (i.e., with the Y axis pointing down).
+    /// Creates an iterator over the positions of the specified grid.
     ///
     /// ## Panics
-    /// Panics if any of the above constraints is violated or a value is not finite.
-    pub fn new(
-        width: f64,
-        height: f64,
-        dx: f64,
-        dy: f64,
-        x0: f64,
-        y0: f64,
-        alpha: Angle<f64>,
-    ) -> Self {
-        assert!(alpha.into_radians().is_finite());
+    /// Panics if `width`, `height`, `dx` or `dy` is not positive, or if any value
+    /// (including the angle) is not finite.
+    pub fn new(grid: Grid) -> Self {
+        let Grid {
+            width,
+            height,
+            dx,
+            dy,
+            x0,
+            y0,
+            angle,
+        } = grid;
+
+        assert!(angle.into_radians().is_finite());
         assert!(width > 0.0 && width.is_finite());
         assert!(height > 0.0 && height.is_finite());
         assert!(dx > 0.0 && dx.is_finite());
@@ -104,14 +96,14 @@ impl GridPositionIterator {
         let bl = Vector::new(0.0, height);
         let br = Vector::new(width, height);
 
-        let (sin, cos) = alpha.sin_cos();
+        let (sin, cos) = angle.sin_cos();
 
         Self {
             dx,
             dy,
             sin,
             cos,
-            inner: OptimalIterator::new(tl, tr, bl, br, alpha, dx, dy, x0, y0),
+            inner: OptimalIterator::new(tl, tr, bl, br, angle, dx, dy, x0, y0),
         }
     }
 }
@@ -182,8 +174,16 @@ mod tests {
 
         for (w, h, dx, dy, x0, y0) in cases {
             for deg in angles {
-                let grid =
-                    GridPositionIterator::new(w, h, dx, dy, x0, y0, Angle::from_degrees(deg));
+                let grid = Grid {
+                    width: w,
+                    height: h,
+                    dx,
+                    dy,
+                    x0,
+                    y0,
+                    angle: Angle::from_degrees(deg),
+                }
+                .into_iter();
                 let max = grid.size_hint().1.unwrap();
                 let count = grid.count();
                 let expected = brute_force_count(w, h, dx, dy, x0, y0, deg);
@@ -197,8 +197,10 @@ mod tests {
     #[test]
     fn rotation_direction() {
         let (dx, deg) = (5.0, 30.0_f64);
-        let mut grid =
-            GridPositionIterator::new(100.0, 100.0, dx, dx, 0.0, 0.0, Angle::from_degrees(deg));
+        let mut grid = Grid::new(100.0, 100.0)
+            .spacing(dx, dx)
+            .angle(Angle::from_degrees(deg))
+            .into_iter();
         let a = grid.next().unwrap();
         let b = grid.next().unwrap();
         let (sin, cos) = deg.to_radians().sin_cos();
@@ -211,12 +213,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn zero_dx_panics() {
-        GridPositionIterator::new(10.0, 10.0, 0.0, 1.0, 0.0, 0.0, Angle::default());
+        Grid::new(10.0, 10.0).spacing(0.0, 1.0).into_iter();
     }
 
     #[test]
     #[should_panic]
     fn negative_dy_panics() {
-        GridPositionIterator::new(10.0, 10.0, 1.0, -1.0, 0.0, 0.0, Angle::default());
+        Grid::new(10.0, 10.0).spacing(1.0, -1.0).into_iter();
     }
 }

@@ -160,8 +160,9 @@ impl OptimalIterator {
             let row_start = Vector::new(self.min_x, y);
             let row_end = Vector::new(self.min_x + self.extent.x, y);
             let ray = Line::from_points(row_start, &row_end);
-            let Some((start, end)) = self.find_intersections(&ray) else {
-                continue;
+            let (start, end) = match self.find_intersections(&ray) {
+                Some(intersections) => intersections,
+                None => continue,
             };
 
             // The first x coordinate along the row that lies on the grid

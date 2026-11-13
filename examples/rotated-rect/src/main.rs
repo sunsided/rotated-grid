@@ -5,9 +5,10 @@
 //! the right half the original (unrotated) space. Press Escape to quit.
 
 use minifb::{Key, Window, WindowOptions};
-use rotated_grid::{
-    inner::line::Line, inner::line_segment::LineSegment, inner::vector::Vector, Angle,
-};
+mod geometry;
+
+use geometry::{Line, Vector};
+use rotated_grid::Angle;
 use std::error::Error;
 
 const WIDTH: usize = 640;
@@ -92,17 +93,17 @@ fn render(canvas: &mut Canvas, angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64)
     );
 
     // The rotated rectangle.
-    let tl = tl.rotate_around(&center, angle);
-    let tr = tr.rotate_around(&center, angle);
-    let bl = bl.rotate_around(&center, angle);
-    let br = br.rotate_around(&center, angle);
+    let tl = tl.rotate_around(&center, sin, cos);
+    let tr = tr.rotate_around(&center, sin, cos);
+    let bl = bl.rotate_around(&center, sin, cos);
+    let br = br.rotate_around(&center, sin, cos);
     canvas.rectangle(&tl, &tr, &bl, &br, BLACK);
 
     // Determine line segments describing the rotated rectangle.
-    let rect_top = LineSegment::from_points(tr, &tl);
-    let rect_left = LineSegment::from_points(tl, &bl);
-    let rect_bottom = LineSegment::from_points(bl, &br);
-    let rect_right = LineSegment::from_points(tr, &br);
+    let rect_top = Line::from_points(tr, tl);
+    let rect_left = Line::from_points(tl, bl);
+    let rect_bottom = Line::from_points(bl, br);
+    let rect_right = Line::from_points(tr, br);
 
     // Draw the Axis-Aligned Bounding Box that wraps the rotated rectangle.
     let (sin_abs, cos_abs) = (sin.abs(), cos.abs());
@@ -123,7 +124,7 @@ fn render(canvas: &mut Canvas, angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64)
 
     while y <= br.y {
         // Determine the intersection of the ray from the given row with the rectangle.
-        let ray = Line::from_points(Vector::new(tl.x, y), &Vector::new(tl.x + extent.x, y));
+        let ray = Line::from_points(Vector::new(tl.x, y), Vector::new(tl.x + extent.x, y));
         if let Some((start, end)) = find_intersections(
             &ray,
             &rect_top,
@@ -146,7 +147,7 @@ fn render(canvas: &mut Canvas, angle: Angle, dx: f64, dy: f64, x0: f64, y0: f64)
                 canvas.point(&point, 2, BLUE);
 
                 // Un-rotate the point for visualization.
-                let point = point.rotate_around_with(&center, -sin, cos);
+                let point = point.rotate_around(&center, -sin, cos);
                 canvas.point(&(point + unrotated), 2, BLUE);
 
                 x += dx;
@@ -210,10 +211,10 @@ impl Canvas {
 /// Finds the first and last intersection points of the ray with the rotated rectangle.
 fn find_intersections(
     ray: &Line,
-    top: &LineSegment,
-    left: &LineSegment,
-    bottom: &LineSegment,
-    right: &LineSegment,
+    top: &Line,
+    left: &Line,
+    bottom: &Line,
+    right: &Line,
     width: f64,
     height: f64,
 ) -> Option<(Vector, Vector)> {
@@ -221,10 +222,10 @@ fn find_intersections(
     let mut max = f64::NEG_INFINITY;
 
     let hits = [
-        ray.calculate_intersection_t(&top.normalized(), width),
-        ray.calculate_intersection_t(&bottom.normalized(), width),
-        ray.calculate_intersection_t(&left.normalized(), height),
-        ray.calculate_intersection_t(&right.normalized(), height),
+        ray.intersect(top, width),
+        ray.intersect(bottom, width),
+        ray.intersect(left, height),
+        ray.intersect(right, height),
     ];
     for t in hits.into_iter().flatten() {
         min = min.min(t);

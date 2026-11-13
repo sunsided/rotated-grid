@@ -27,11 +27,6 @@ impl Line {
     }
 
     #[inline(always)]
-    pub const fn origin(&self) -> &Vector {
-        &self.origin
-    }
-
-    #[inline(always)]
     pub const fn direction(&self) -> &Vector {
         &self.direction
     }

@@ -1,6 +1,6 @@
 //! Renders the four CMYK halftone grids side by side into `cmyk.svg` in the current directory.
 
-use rotated_grid::{Angle, GridCoord, GridPositionIterator};
+use rotated_grid::{Angle, Grid, GridCoord};
 use std::error::Error;
 use std::fmt::Write as _;
 
@@ -17,15 +17,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut svg = String::new();
     for (i, (name, angle, color)) in grids.into_iter().enumerate() {
-        let grid = GridPositionIterator::new(
-            600.0,
-            400.0,
-            7.0,
-            7.0,
-            0.0,
-            0.0,
-            Angle::<f64>::from_degrees(angle),
-        );
+        let grid = Grid::new(600.0, 400.0)
+            .spacing(7.0, 7.0)
+            .angle(Angle::from_degrees(angle))
+            .into_iter();
 
         let expected_count = grid.size_hint();
         let mut count = 0;

@@ -17,10 +17,7 @@ usage example.
 ## Usage example
 
 ```rust
-use rotated_grid::{Angle, GridPositionIterator, GridCoord};
-
-const WIDTH: usize = 16;
-const HEIGHT: usize = 10;
+use rotated_grid::{Angle, Grid, GridCoord};
 
 fn main() {
     let halftone_grids = [
@@ -29,31 +26,36 @@ fn main() {
         ("Yellow", 0.0),
         ("Black", 45.0),
     ];
-    
+
     for (name, angle) in halftone_grids {
-        println!("{name} at {angle}°", name = name, angle = angle);
-    
-        let grid = GridPositionIterator::new(
-            WIDTH as _,
-            HEIGHT as _,
-            7.0,
-            7.0,
-            0.0,
-            0.0,
-            Angle::<f64>::from_degrees(angle),
-        );
-    
-        let (_, expected_max) = grid.size_hint();
-        let mut count = 0;
-    
+        println!("{name} at {angle}°");
+
+        let grid = Grid::new(16.0, 10.0)
+            .spacing(7.0, 7.0)
+            .angle(Angle::from_degrees(angle));
+
         for GridCoord { x, y } in grid {
-            println!("{x}, {y}", x = x, y = y);
-            count += 1;
+            println!("{x}, {y}");
         }
-    
-        assert!(count <= expected_max.unwrap())
     }
 }
+```
+
+All parameters can also be set as named fields:
+
+```rust
+use rotated_grid::{Angle, Grid};
+
+let grid = Grid {
+    width: 16.0,
+    height: 10.0,
+    dx: 7.0,
+    dy: 7.0,
+    x0: 0.0,
+    y0: 0.0,
+    angle: Angle::from_degrees(15.0),
+};
+let positions: Vec<_> = grid.into_iter().collect();
 ```
 
 You can run the example application using

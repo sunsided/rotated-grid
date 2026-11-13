@@ -1,25 +1,23 @@
 use std::ops::Neg;
 
 /// An angle expressed in radians.
-#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
-pub struct Angle<T = f64>(T);
+#[derive(Debug, Default, Copy, Clone, PartialOrd, PartialEq)]
+pub struct Angle(f64);
 
-impl<T> Angle<T> {
+impl Angle {
     /// Constructs the value from an angle specified in radians.
-    pub fn from_radians(radians: T) -> Self {
+    pub const fn from_radians(radians: f64) -> Self {
         Self(radians)
     }
 
-    /// Converts the value back into radians.
-    pub fn into_radians(self) -> T {
-        self.0
-    }
-}
-
-impl Angle<f64> {
     /// Constructs the value from an angle specified in degrees.
-    pub fn from_degrees(radians: f64) -> Self {
-        Self(radians.to_radians())
+    pub fn from_degrees(degrees: f64) -> Self {
+        Self(degrees.to_radians())
+    }
+
+    /// Converts the value back into radians.
+    pub const fn into_radians(self) -> f64 {
+        self.0
     }
 
     /// Determines the sine and cosine of the angle.
@@ -28,13 +26,7 @@ impl Angle<f64> {
     }
 }
 
-impl<T: Default> Default for Angle<T> {
-    fn default() -> Self {
-        Self(T::default())
-    }
-}
-
-impl Neg for Angle<f64> {
+impl Neg for Angle {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
